@@ -247,62 +247,6 @@
         </div>
     </div>
 
-    <!-- SQL Modal (Simplified) -->
-    <div id="sqlScriptModal"
-        style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 1000; align-items: center; justify-content: center; padding: 2rem;">
-        <div class="login-card" style="max-width: 600px; max-height: 80vh; overflow-y: auto;">
-            <h3>Script d'initialisation SQL</h3>
-            <p style="font-size: 0.85rem; margin-bottom: 1rem;">Copiez ce script et exécutez-le dans le "SQL Editor" de
-                votre dashboard Supabase.</p>
-            <pre id="sqlSource"
-                style="background: rgba(0,0,0,0.3); padding: 1rem; border-radius: 8px; font-size: 0.75rem; color: #10b981; overflow-x: auto;">
--- 1. Create Profiles table
-CREATE TABLE IF NOT EXISTS public.profiles (
-  id UUID REFERENCES auth.users ON DELETE CASCADE PRIMARY KEY,
-  updated_at TIMESTAMP WITH TIME ZONE,
-  tier TEXT DEFAULT 'free',
-  dashboard_config JSONB DEFAULT '[]'::jsonb,
-  ha_url TEXT,
-  ha_token_enc TEXT,
-  ha_entity_energy TEXT,
-  theme TEXT DEFAULT 'default'
-);
-
--- 2. Create Rooms table
-CREATE TABLE IF NOT EXISTS public.rooms (
-  id TEXT NOT NULL,
-  user_id UUID REFERENCES auth.users ON DELETE CASCADE NOT NULL,
-  name TEXT NOT NULL,
-  PRIMARY KEY (id, user_id)
-);
-
--- 3. Create Entities table
-CREATE TABLE IF NOT EXISTS public.entities (
-  haid TEXT NOT NULL,
-  user_id UUID REFERENCES auth.users ON DELETE CASCADE NOT NULL,
-  name TEXT,
-  type TEXT,
-  variant TEXT,
-  roomid TEXT,
-  PRIMARY KEY (haid, user_id)
-);
-
--- Enable RLS
-ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.rooms ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.entities ENABLE ROW LEVEL SECURITY;
-
--- Set Policies
-CREATE POLICY "Users can see own profile" ON public.profiles FOR SELECT USING (auth.uid() = id);
-CREATE POLICY "Users can update own profile" ON public.profiles FOR UPSERT WITH CHECK (auth.uid() = id);
-CREATE POLICY "Users can manage own rooms" ON public.rooms FOR ALL USING (auth.uid() = user_id);
-CREATE POLICY "Users can manage own entities" ON public.entities FOR ALL USING (auth.uid() = user_id);
-            </pre>
-            <button onclick="copySqlToClipboard()" class="submit-btn" style="background: #444;">Copier le code</button>
-            <button onclick="document.getElementById('sqlScriptModal').style.display='none'" class="submit-btn"
-                style="background: transparent; border: 1px solid rgba(255,255,255,0.1); margin-top: 0.5rem;">Fermer</button>
-        </div>
-    </div>
 
     <script src="ui.js"></script>
     <script src="nexura-auth.js"></script>

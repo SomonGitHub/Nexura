@@ -1,5 +1,9 @@
 console.log("🚀 Nexura Auth Loading (v1.4)...");
 
+// SaaS Mode: Hardcoded Supabase Credentials
+const SUPABASE_URL = "https://wldzsmggsbzjlcptyijg.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndsZHpzbWdnc2J6amxjcHR5aWpnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE1ODQwMTksImV4cCI6MjA4NzE2MDAxOX0.TxKehKCvbE4UyaqTb8-Q45eGKm1CleXijgzao0p5Nlw";
+
 var nexuraSupabase = null;
 let currentSession = null;
 let isLoginMode = true;
@@ -31,32 +35,16 @@ function applyTheme(themeName) {
 window.applyTheme = applyTheme;
 
 function initSupabase() {
-    console.log("Initializing Supabase...");
-    const url = localStorage.getItem('supabase_url');
-    const key = localStorage.getItem('supabase_key');
-    const setupUI = getAuthSetupUI();
-    const sqlInit = getSqlInitSection();
+    if (nexuraSupabase) return;
 
-
-    const urlInput = getSupabaseUrlInput();
-    const keyInput = getSupabaseKeyInput();
-    if (urlInput && url) urlInput.value = url;
-    if (keyInput && key) keyInput.value = key;
-
-    if (url && key) {
-        if (!window.supabase) {
-            console.error("Supabase library not found! Check your script tags.");
-            return;
-        }
-        nexuraSupabase = window.supabase.createClient(url, key);
-        checkSession();
-        if (setupUI) setupUI.style.display = 'none';
-
-
-        checkDatabaseHealth();
-    } else {
-        if (setupUI) setupUI.style.display = 'block';
+    if (!window.supabase) {
+        console.error("Supabase library not found! Check your script tags.");
+        return;
     }
+
+    console.log("Initializing Nexura SaaS Auth...");
+    nexuraSupabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    checkSession();
 }
 
 async function checkDatabaseHealth() {
@@ -169,35 +157,6 @@ function openAuthModal() {
 }
 window.openAuthModal = openAuthModal;
 
-function closeAuthModal() {
-    const modal = getAuthModal();
-    if (modal) modal.style.display = 'none';
-}
-window.closeAuthModal = closeAuthModal;
-
-function openDatabaseConfig() {
-    const modal = getAuthModal();
-    const setupUI = getAuthSetupUI();
-
-    if (!modal) {
-        alert("Erreur: Le modal d'authentification (authModal) est introuvable sur cette page.");
-        return;
-    }
-
-    modal.style.display = 'flex';
-
-
-    if (setupUI) {
-        setupUI.style.display = 'block';
-    } else {
-        console.warn("setupUI not found");
-    }
-
-
-    if (window.lucide) lucide.createIcons();
-}
-window.openDatabaseConfig = openDatabaseConfig;
-
 function toggleAuthMode() {
     isLoginMode = !isLoginMode;
     const title = getAuthTitle();
@@ -208,56 +167,19 @@ function toggleAuthMode() {
     if (title) title.innerText = isLoginMode ? 'Connexion' : 'Inscription';
     if (toggleText) toggleText.innerText = isLoginMode ? 'Pas encore de compte ?' : 'Déjà un compte ?';
     if (toggleBtn) toggleBtn.innerText = isLoginMode ? "S'inscrire" : 'Se connecter';
-    if (form) form.querySelector('button').innerText = isLoginMode ? 'Se connecter' : "S'inscrire";
+    if (form) {
+        const btn = form.querySelector('button');
+        if (btn) btn.innerText = isLoginMode ? 'Se connecter' : "S'inscrire";
+    }
 }
 window.toggleAuthMode = toggleAuthMode;
 
-function saveSupabaseConfig() {
-    const urlInput = getSupabaseUrlInput();
-    const keyInput = getSupabaseKeyInput();
-    const url = urlInput ? urlInput.value.trim() : null;
-    const key = keyInput ? keyInput.value.trim() : null;
-
-    if (url && key) {
-        localStorage.setItem('supabase_url', url);
-        localStorage.setItem('supabase_key', key);
-
-
-        const btn = event.target;
-        const originalText = btn.innerText;
-        btn.innerText = "Configuré ✓";
-        btn.style.backgroundColor = "#10b981";
-
-        initSupabase();
-
-        setTimeout(() => {
-            btn.innerText = originalText;
-            btn.style.backgroundColor = "";
-        }, 2000);
-    } else {
-        alert("Veuillez remplir l'URL et la clé.");
-    }
+function closeAuthModal() {
+    const modal = getAuthModal();
+    if (modal) modal.style.display = 'none';
 }
-window.saveSupabaseConfig = saveSupabaseConfig;
+window.closeAuthModal = closeAuthModal;
 
-function showSqlScript() {
-    const modal = document.getElementById('sqlScriptModal');
-    if (modal) modal.style.display = 'flex';
-}
-window.showSqlScript = showSqlScript;
-
-function copySqlToClipboard() {
-    const sqlText = document.getElementById('sqlSource').innerText;
-    navigator.clipboard.writeText(sqlText).then(() => {
-        const btn = event.target;
-        const originalText = btn.innerText;
-        btn.innerText = "Copié !";
-        setTimeout(() => btn.innerText = originalText, 2000);
-    }).catch(err => {
-        alert("Erreur lors de la copie : " + err);
-    });
-}
-window.copySqlToClipboard = copySqlToClipboard;
 
 async function logout() {
     if (nexuraSupabase) {
@@ -388,11 +310,13 @@ window.syncFromCloud = syncFromCloud;
 
 document.addEventListener('DOMContentLoaded', () => {
 
+    initSupabase();
+
     const form = getAuthForm();
     if (form) {
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
-            if (!nexuraSupabase) return alert('Veuillez configurer Supabase d\'abord.');
+            if (!nexuraSupabase) return;
 
             const emailInput = getAuthEmail();
             const passwordInput = getAuthPassword();
@@ -421,19 +345,5 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    const url = localStorage.getItem('supabase_url');
-    const key = localStorage.getItem('supabase_key');
-
-
     applyTheme();
-
-    if (url && key) {
-        initSupabase();
-    } else {
-        // Enforce login redirection even if no Supabase config exists yet
-        if (!window.location.pathname.endsWith('login.html')) {
-            window.location.href = 'login.html';
-        }
-        updateUIForAuth();
-    }
 });
