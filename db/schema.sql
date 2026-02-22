@@ -10,7 +10,10 @@ CREATE TABLE IF NOT EXISTS profiles (
   ha_url TEXT,
   ha_token_enc TEXT,
   ha_entity_energy TEXT,
-  theme TEXT DEFAULT 'default'
+  theme TEXT DEFAULT 'default',
+  tuya_client_id TEXT,
+  tuya_secret_enc TEXT,
+  tuya_region TEXT
 );
 
 -- 2. Rooms table

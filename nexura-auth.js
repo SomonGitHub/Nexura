@@ -210,7 +210,10 @@ async function logout() {
         'haUrl',
         'haToken',
         'haEntityEnergy',
-        'sv_theme'
+        'sv_theme',
+        'tuyaClientId',
+        'tuyaSecret',
+        'tuyaRegion'
     ];
 
     keysToClear.forEach(key => localStorage.removeItem(key));
@@ -259,8 +262,15 @@ async function syncToCloud() {
             tier: window.userTier,
             theme: localStorage.getItem('sv_theme') || 'default',
             ha_url: haUrl || null,
-            ha_entity_energy: haEnergy || null
+            ha_entity_energy: haEnergy || null,
+            tuya_client_id: localStorage.getItem('tuyaClientId') || null,
+            tuya_region: localStorage.getItem('tuyaRegion') || null
         };
+
+        const tuyaSecret = localStorage.getItem('tuyaSecret');
+        if (tuyaSecret) {
+            profileData.tuya_secret_enc = CryptoJS.AES.encrypt(tuyaSecret, currentSession.user.id).toString();
+        }
 
         if (haToken) {
             profileData.ha_token_enc = CryptoJS.AES.encrypt(haToken, currentSession.user.id).toString();
@@ -310,7 +320,16 @@ async function syncFromCloud() {
                     const bytes = CryptoJS.AES.decrypt(profile.ha_token_enc, currentSession.user.id);
                     const originalToken = bytes.toString(CryptoJS.enc.Utf8);
                     if (originalToken) localStorage.setItem('haToken', originalToken);
-                } catch (e) { console.error("Decryption failed", e); }
+                } catch (e) { console.error("HA Decryption failed", e); }
+            }
+            if (profile.tuya_client_id) localStorage.setItem('tuyaClientId', profile.tuya_client_id);
+            if (profile.tuya_region) localStorage.setItem('tuyaRegion', profile.tuya_region);
+            if (profile.tuya_secret_enc) {
+                try {
+                    const bytes = CryptoJS.AES.decrypt(profile.tuya_secret_enc, currentSession.user.id);
+                    const originalSecret = bytes.toString(CryptoJS.enc.Utf8);
+                    if (originalSecret) localStorage.setItem('tuyaSecret', originalSecret);
+                } catch (e) { console.error("Tuya Decryption failed", e); }
             }
         }
 
