@@ -123,14 +123,40 @@
                     <section id="quickActionsSection" style="margin-bottom: 2rem; display: none;">
                         <h2 style="margin-bottom: 1.5rem; font-size: 1rem;">Actions Rapides</h2>
                         <div style="display: flex; flex-direction: column; gap: 0.75rem;">
-                            <div class="card" id="turnOffAllBtn"
-                                style="display: flex; flex-direction: row; align-items: center; justify-content: flex-start; gap: 1rem; cursor: pointer; min-height: 60px; padding: 0.75rem;"
-                                onclick="turnOffAll()">
-                                <div class="logo-icon"
-                                    style="background-color: #ef4444; box-shadow: 0 0 15px rgba(239, 68, 68, 0.4); width: 28px; height: 28px; min-width: 28px; display: flex; align-items: center; justify-content: center;">
-                                    <i data-lucide="power" style="color: white; width: 14px; height: 14px;"></i>
+                            <!-- Lights Row -->
+                            <div id="lightActionsRow">
+                                <div class="card" id="turnOffAllBtn"
+                                    style="display: flex; flex-direction: row; align-items: center; justify-content: flex-start; gap: 1rem; cursor: pointer; min-height: 60px; padding: 0.75rem;"
+                                    onclick="turnOffAll()">
+                                    <div class="logo-icon"
+                                        style="background-color: #ef4444; box-shadow: 0 0 15px rgba(239, 68, 68, 0.4); width: 28px; height: 28px; min-width: 28px; display: flex; align-items: center; justify-content: center;">
+                                        <i data-lucide="power" style="color: white; width: 14px; height: 14px;"></i>
+                                    </div>
+                                    <span style="font-weight: 600; font-size: 0.8rem;">Tout éteindre</span>
                                 </div>
-                                <span style="font-weight: 600; font-size: 0.8rem;">Tout éteindre</span>
+                            </div>
+                            <!-- Shutters Row -->
+                            <div id="shutterActionsRow"
+                                style="display: none; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+                                <div class="card"
+                                    style="display: flex; flex-direction: row; align-items: center; justify-content: flex-start; gap: 0.5rem; cursor: pointer; min-height: 60px; padding: 0.5rem;"
+                                    onclick="controlAllShutters('open')">
+                                    <div class="logo-icon"
+                                        style="background-color: var(--accent-color); box-shadow: 0 0 15px rgba(var(--accent-color-rgb), 0.4); width: 24px; height: 24px; min-width: 24px; display: flex; align-items: center; justify-content: center;">
+                                        <i data-lucide="arrow-up" style="color: white; width: 12px; height: 12px;"></i>
+                                    </div>
+                                    <span style="font-weight: 600; font-size: 0.75rem;">Tout ouvrir</span>
+                                </div>
+                                <div class="card"
+                                    style="display: flex; flex-direction: row; align-items: center; justify-content: flex-start; gap: 0.5rem; cursor: pointer; min-height: 60px; padding: 0.5rem;"
+                                    onclick="controlAllShutters('close')">
+                                    <div class="logo-icon"
+                                        style="background-color: #3b82f6; box-shadow: 0 0 15px rgba(59, 130, 246, 0.4); width: 24px; height: 24px; min-width: 24px; display: flex; align-items: center; justify-content: center;">
+                                        <i data-lucide="arrow-down"
+                                            style="color: white; width: 12px; height: 12px;"></i>
+                                    </div>
+                                    <span style="font-weight: 600; font-size: 0.75rem;">Tout fermer</span>
+                                </div>
                             </div>
                         </div>
                     </section>
@@ -553,11 +579,15 @@ CREATE POLICY "Users can manage their entities" ON public.entities FOR ALL USING
                 document.getElementById('kpiLights').style.display = hasLights ? 'flex' : 'none';
                 document.getElementById('kpiShutters').style.display = hasShutters ? 'flex' : 'none';
 
-                // Toggle Quick Actions Section (lights or switches)
+                // Toggle Quick Actions Section
                 const quickActions = document.getElementById('quickActionsSection');
                 if (quickActions) {
                     const hasActionables = managedEntities.some(e => e.type === 'light' || e.type === 'switch');
-                    quickActions.style.display = hasActionables ? 'block' : 'none';
+                    const hasShutterActions = managedEntities.some(e => e.type === 'shutter');
+
+                    document.getElementById('lightActionsRow').style.display = hasActionables ? 'block' : 'none';
+                    document.getElementById('shutterActionsRow').style.display = hasShutterActions ? 'grid' : 'none';
+                    quickActions.style.display = (hasActionables || hasShutterActions) ? 'block' : 'none';
                 }
 
                 // Aggregation for KPIs
@@ -689,9 +719,12 @@ CREATE POLICY "Users can manage their entities" ON public.entities FOR ALL USING
             turnOffBtn.style.pointerEvents = 'none';
 
             try {
+                const currentUrl = localStorage.getItem('haUrl');
+                const currentToken = localStorage.getItem('haToken');
+
                 // Get current states to only turn off what's actually 'on'
-                const response = await fetch(`${url}/api/states`, {
-                    headers: { "Authorization": `Bearer ${token}` }
+                const response = await fetch(`${currentUrl}/api/states`, {
+                    headers: { "Authorization": `Bearer ${currentToken}` }
                 });
                 const allStates = await response.json();
 
@@ -699,22 +732,38 @@ CREATE POLICY "Users can manage their entities" ON public.entities FOR ALL USING
                     const stateObj = allStates.find(s => s.entity_id === target.haId);
                     if (stateObj && stateObj.state === 'on') {
                         const domain = target.haId.split('.')[0];
-                        await fetch(`${url}/api/services/${domain}/turn_off`, {
-                            method: 'POST',
-                            headers: {
-                                "Authorization": `Bearer ${token}`,
-                                "Content-Type": "application/json"
-                            },
-                            body: JSON.stringify({ entity_id: target.haId })
-                        });
+                        await callHAService(domain, 'turn_off', target.haId);
                     }
                 }
-                setTimeout(refreshDashboard, 500);
             } catch (err) {
                 console.error("Turn all off failed:", err);
             } finally {
                 turnOffBtn.style.opacity = '1';
                 turnOffBtn.style.pointerEvents = 'auto';
+            }
+        };
+
+        window.controlAllShutters = async function (action) {
+            const service = action === 'open' ? 'open_cover' : 'close_cover';
+            const domain = 'cover';
+            const managedEntities = JSON.parse(localStorage.getItem('domotique_entities')) || [];
+            const shutterTargets = managedEntities.filter(e => e.type === 'shutter');
+
+            if (shutterTargets.length === 0) return;
+
+            const row = document.getElementById('shutterActionsRow');
+            row.style.opacity = '0.5';
+            row.style.pointerEvents = 'none';
+
+            try {
+                for (const target of shutterTargets) {
+                    await callHAService(domain, service, target.haId);
+                }
+            } catch (err) {
+                console.error("Control all shutters failed:", err);
+            } finally {
+                row.style.opacity = '1';
+                row.style.pointerEvents = 'auto';
             }
         };
 
