@@ -526,7 +526,7 @@
                 const token = haTokenInput.value;
                 const entity = haEntityInput.value;
 
-                if (!url || !token || !entity) {
+                if (!url || !token) {
                     testBtn.textContent = 'Champs requis !';
                     testBtn.style.backgroundColor = '#f59e0b';
                     setTimeout(() => {
@@ -544,7 +544,10 @@
                     const controller = new AbortController();
                     const timeoutId = setTimeout(() => controller.abort(), 8000); // 8s timeout
 
-                    const response = await fetch(`${url}/api/states/${entity}`, {
+                    // If entity is provided, test it. Otherwise test global config.
+                    const endpoint = entity ? `${url}/api/states/${entity}` : `${url}/api/config`;
+
+                    const response = await fetch(endpoint, {
                         headers: {
                             "Authorization": `Bearer ${token}`,
                             "Content-Type": "application/json"
@@ -556,7 +559,8 @@
 
                     if (response.ok) {
                         const data = await response.json();
-                        testBtn.textContent = `Connecté ✓ (${data.state})`;
+                        const statusLabel = entity ? `Connecté ✓ (${data.state})` : 'Instance Connectée ✓';
+                        testBtn.textContent = statusLabel;
                         testBtn.style.backgroundColor = '#10b981';
                         testBtn.style.borderColor = '#10b981';
 
