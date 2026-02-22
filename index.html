@@ -137,10 +137,9 @@
                             </div>
 
                             <!-- Row 2: Shutters -->
-                            <div id="shutterActionsRow"
-                                style="display: none; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+                            <div id="shutterActionsRow" style="display: none; flex-direction: row; gap: 0.75rem;">
                                 <div class="card" id="openAllShuttersBtn"
-                                    style="display: flex; flex-direction: row; align-items: center; justify-content: flex-start; gap: 0.5rem; cursor: pointer; min-height: 60px; padding: 0.5rem;"
+                                    style="display: flex; flex: 1; flex-direction: row; align-items: center; justify-content: flex-start; gap: 0.5rem; cursor: pointer; min-height: 60px; padding: 0.5rem;"
                                     onclick="controlAllShutters('open')">
                                     <div class="logo-icon"
                                         style="background-color: var(--accent-color); box-shadow: 0 0 15px rgba(var(--accent-color-rgb), 0.4); width: 28px; height: 28px; min-width: 28px; display: flex; align-items: center; justify-content: center;">
@@ -149,7 +148,7 @@
                                     <span style="font-weight: 600; font-size: 0.75rem;">Tout ouvrir</span>
                                 </div>
                                 <div class="card" id="closeAllShuttersBtn"
-                                    style="display: flex; flex-direction: row; align-items: center; justify-content: flex-start; gap: 0.5rem; cursor: pointer; min-height: 60px; padding: 0.5rem;"
+                                    style="display: flex; flex: 1; flex-direction: row; align-items: center; justify-content: flex-start; gap: 0.5rem; cursor: pointer; min-height: 60px; padding: 0.5rem;"
                                     onclick="controlAllShutters('close')">
                                     <div class="logo-icon"
                                         style="background-color: #3b82f6; box-shadow: 0 0 15px rgba(59, 130, 246, 0.4); width: 28px; height: 28px; min-width: 28px; display: flex; align-items: center; justify-content: center;">
@@ -587,7 +586,7 @@ CREATE POLICY "Users can manage their entities" ON public.entities FOR ALL USING
                     const hasShutterActions = managedEntities.some(e => e.type === 'shutter');
 
                     document.getElementById('lightActionsRow').style.display = hasActionables ? 'block' : 'none';
-                    document.getElementById('shutterActionsRow').style.display = hasShutterActions ? 'grid' : 'none';
+                    document.getElementById('shutterActionsRow').style.display = hasShutterActions ? 'flex' : 'none';
                     quickActions.style.display = (hasActionables || hasShutterActions) ? 'block' : 'none';
 
                     // Force refresh icons if section is showing
