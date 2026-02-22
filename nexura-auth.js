@@ -70,9 +70,11 @@ async function checkDatabaseHealth() {
 }
 
 async function checkSession() {
-    if (!nexuraSupabase) {
+    // Robust detection of login page (Cloudflare may serve /login or /login.html)
+    const isLoginPage = window.location.pathname.includes('login') || !!document.getElementById('authFormSection');
 
-        if (!window.location.pathname.endsWith('login.html')) {
+    if (!nexuraSupabase) {
+        if (!isLoginPage) {
             window.location.href = 'login.html';
         }
         return;
@@ -80,21 +82,16 @@ async function checkSession() {
     const { data: { session }, error } = await nexuraSupabase.auth.getSession();
     currentSession = session;
 
-    const isLoginPage = window.location.pathname.endsWith('login.html');
-
     if (currentSession) {
         await fetchUserTier();
-
         await syncFromCloud(); // Pull existing data first
         isInitialSyncDone = true; // Mark as ready to push
         syncToCloud(); // Then push any local updates if necessary
-
 
         if (isLoginPage) {
             window.location.href = 'index.html';
         }
     } else {
-
         if (!isLoginPage) {
             window.location.href = 'login.html';
         }
