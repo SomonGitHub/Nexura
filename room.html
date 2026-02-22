@@ -233,14 +233,35 @@
             }
 
             try {
-                await fetch(`${currentHaUrl}/api/services/${domain}/${service}`, {
-                    method: 'POST',
-                    headers: {
-                        "Authorization": `Bearer ${currentHaToken}`,
-                        "Content-Type": "application/json"
-                    },
-                    body: JSON.stringify({ entity_id: entityId, ...data })
-                });
+                const entities = JSON.parse(localStorage.getItem('domotique_entities')) || [];
+                const entity = entities.find(e => e.haId === entityId);
+                const isTuya = entity && entity.source === 'tuya';
+
+                if (isTuya) {
+                    const tokenRes = await fetch(`/api/tuya/token?userId=${window.nexuraUser?.id}`);
+                    const tokenData = await tokenRes.json();
+                    const accessToken = tokenData.result.access_token;
+                    await fetch('/api/tuya/proxy', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            userId: window.nexuraUser?.id,
+                            accessToken: accessToken,
+                            tuyaPath: `/v1.0/devices/${entityId}/commands`,
+                            method: 'POST',
+                            body: { commands: [{ code: 'switch_led', value: service === 'turn_on' }] }
+                        })
+                    });
+                } else {
+                    await fetch(`${currentHaUrl}/api/services/${domain}/${service}`, {
+                        method: 'POST',
+                        headers: {
+                            "Authorization": `Bearer ${currentHaToken}`,
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify({ entity_id: entityId, ...data })
+                    });
+                }
 
                 // UI.js will handle state sync via fetchRoomStates rebuilding the grid
                 setTimeout(fetchRoomStates, 500);
