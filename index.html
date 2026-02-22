@@ -143,8 +143,8 @@
                                     style="display: flex; flex-direction: row; align-items: center; justify-content: flex-start; gap: 0.5rem; cursor: pointer; min-height: 60px; padding: 0.5rem;"
                                     onclick="controlAllShutters('open')">
                                     <div class="logo-icon"
-                                        style="background-color: var(--accent-color); box-shadow: 0 0 15px rgba(var(--accent-color-rgb), 0.4); width: 24px; height: 24px; min-width: 24px; display: flex; align-items: center; justify-content: center;">
-                                        <i data-lucide="arrow-up" style="color: white; width: 12px; height: 12px;"></i>
+                                        style="background-color: var(--accent-color); box-shadow: 0 0 15px rgba(var(--accent-color-rgb), 0.4); width: 28px; height: 28px; min-width: 28px; display: flex; align-items: center; justify-content: center;">
+                                        <i data-lucide="arrow-up" style="color: white; width: 14px; height: 14px;"></i>
                                     </div>
                                     <span style="font-weight: 600; font-size: 0.75rem;">Tout ouvrir</span>
                                 </div>
@@ -152,9 +152,9 @@
                                     style="display: flex; flex-direction: row; align-items: center; justify-content: flex-start; gap: 0.5rem; cursor: pointer; min-height: 60px; padding: 0.5rem;"
                                     onclick="controlAllShutters('close')">
                                     <div class="logo-icon"
-                                        style="background-color: #3b82f6; box-shadow: 0 0 15px rgba(59, 130, 246, 0.4); width: 24px; height: 24px; min-width: 24px; display: flex; align-items: center; justify-content: center;">
+                                        style="background-color: #3b82f6; box-shadow: 0 0 15px rgba(59, 130, 246, 0.4); width: 28px; height: 28px; min-width: 28px; display: flex; align-items: center; justify-content: center;">
                                         <i data-lucide="arrow-down"
-                                            style="color: white; width: 12px; height: 12px;"></i>
+                                            style="color: white; width: 14px; height: 14px;"></i>
                                     </div>
                                     <span style="font-weight: 600; font-size: 0.75rem;">Tout fermer</span>
                                 </div>
@@ -589,6 +589,9 @@ CREATE POLICY "Users can manage their entities" ON public.entities FOR ALL USING
                     document.getElementById('lightActionsRow').style.display = hasActionables ? 'block' : 'none';
                     document.getElementById('shutterActionsRow').style.display = hasShutterActions ? 'grid' : 'none';
                     quickActions.style.display = (hasActionables || hasShutterActions) ? 'block' : 'none';
+
+                    // Force refresh icons if section is showing
+                    if (quickActions.style.display !== 'none') UI.refreshIcons(quickActions);
                 }
 
                 // Aggregation for KPIs
