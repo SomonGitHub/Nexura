@@ -92,6 +92,27 @@ input[type=range]::-webkit-slider-thumb {
     transform: translateX(18px);
 }
 
+.toggle-switch.is-loading {
+    opacity: 0.7;
+    pointer-events: none;
+    animation: toggle-pulse 1.5s infinite ease-in-out;
+}
+
+@keyframes toggle-pulse {
+    0% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.05);
+        opacity: 0.4;
+    }
+
+    100% {
+        transform: scale(1);
+    }
+}
+
 .back-btn {
     display: flex;
     align-items: center;

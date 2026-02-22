@@ -208,18 +208,46 @@
                 return;
             }
 
+            // --- Optimistic UI Update & Loading State ---
+            const card = document.querySelector(`.card[data-ha-id="${entityId}"]`);
+            const toggle = card?.querySelector('.toggle-switch');
+
+            if (card && (domain === 'light' || domain === 'switch')) {
+                const isActive = card.classList.contains('device-on');
+
+                // Toggle card visual state
+                card.classList.toggle('device-on');
+                const stateText = card.querySelector('.state-text');
+                if (stateText) stateText.textContent = isActive ? 'off' : 'on';
+
+                const iconContainer = card.querySelector('.device-icon');
+                if (iconContainer) {
+                    iconContainer.style.color = !isActive ? 'var(--accent-color)' : 'var(--text-secondary)';
+                }
+
+                // Toggle switch position and start loading pulse
+                if (toggle) {
+                    toggle.classList.toggle('active');
+                    toggle.classList.add('is-loading');
+                }
+            }
+
             try {
                 await fetch(`${currentHaUrl}/api/services/${domain}/${service}`, {
                     method: 'POST',
                     headers: {
-                        "Authorization": `Bearer ${haToken}`,
+                        "Authorization": `Bearer ${currentHaToken}`,
                         "Content-Type": "application/json"
                     },
                     body: JSON.stringify({ entity_id: entityId, ...data })
                 });
+
+                // UI.js will handle state sync via fetchRoomStates rebuilding the grid
                 setTimeout(fetchRoomStates, 500);
             } catch (err) {
                 console.error("Room service call failed:", err);
+                if (toggle) toggle.classList.remove('is-loading');
+                fetchRoomStates();
             }
         };
 

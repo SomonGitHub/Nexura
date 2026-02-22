@@ -445,38 +445,53 @@ CREATE POLICY "Users can manage their entities" ON public.entities FOR ALL USING
         });
 
         async function callHAService(domain, service, entityId, data = {}) {
-            if (!url || !token) return;
+            const currentUrl = localStorage.getItem('haUrl');
+            const currentToken = localStorage.getItem('haToken');
 
-            // Optimistic UI Update
-            const card = document.querySelector(`.card[data-ha-id="${entityId}"]`);
-            if (card && (domain === 'light' || domain === 'switch')) {
-                const isActive = card.classList.contains('device-on');
-                card.classList.toggle('device-on');
-                const stateText = card.querySelector('.state-text');
-                if (stateText) stateText.textContent = isActive ? 'off' : 'on';
-                const iconContainer = card.querySelector('.device-icon');
-                if (iconContainer) {
-                    iconContainer.style.color = !isActive ? 'var(--accent-color)' : 'var(--text-secondary)';
-                }
-            }
-
-            if (!url || !token || url === 'null' || token === 'null') {
+            if (!currentUrl || !currentToken || currentUrl === 'null' || currentToken === 'null') {
                 console.warn("HA Call cancelled: missing credentials");
                 return;
             }
 
+            // --- Optimistic UI Update & Loading State ---
+            const card = document.querySelector(`.card[data-ha-id="${entityId}"]`);
+            const toggle = card?.querySelector('.toggle-switch');
+
+            if (card && (domain === 'light' || domain === 'switch')) {
+                const isActive = card.classList.contains('device-on');
+
+                // Toggle card visual state
+                card.classList.toggle('device-on');
+                const stateText = card.querySelector('.state-text');
+                if (stateText) stateText.textContent = isActive ? 'off' : 'on';
+
+                const iconContainer = card.querySelector('.device-icon');
+                if (iconContainer) {
+                    iconContainer.style.color = !isActive ? 'var(--accent-color)' : 'var(--text-secondary)';
+                }
+
+                // Toggle switch position and start loading pulse
+                if (toggle) {
+                    toggle.classList.toggle('active');
+                    toggle.classList.add('is-loading');
+                }
+            }
+
             try {
-                await fetch(`${url}/api/services/${domain}/${service}`, {
+                await fetch(`${currentUrl}/api/services/${domain}/${service}`, {
                     method: 'POST',
                     headers: {
-                        "Authorization": `Bearer ${token}`,
+                        "Authorization": `Bearer ${currentToken}`,
                         "Content-Type": "application/json"
                     },
                     body: JSON.stringify({ entity_id: entityId, ...data })
                 });
+
+                // Wait a bit then refresh. UI.js will handle removing classes by rebuilding.
                 setTimeout(refreshDashboard, 800);
             } catch (err) {
                 console.error("HA Service Call failed:", err);
+                if (toggle) toggle.classList.remove('is-loading');
                 refreshDashboard();
             }
         }
