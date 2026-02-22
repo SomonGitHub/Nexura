@@ -93,6 +93,12 @@ async function checkSession() {
             await syncToCloud();
         }
 
+        // Onboarding Check: If no HA URL configured and on Dashboard, show tutorial
+        const haUrl = localStorage.getItem('haUrl');
+        if (!haUrl && window.location.pathname.includes('index.html') && window.startTutorial) {
+            window.startTutorial();
+        }
+
         if (isLoginPage) {
             window.location.href = 'index.html';
         }
