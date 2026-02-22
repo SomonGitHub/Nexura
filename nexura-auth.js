@@ -26,7 +26,12 @@ window.userTier = 'free';
 
 function applyTheme(themeName) {
     const theme = themeName || localStorage.getItem('sv_theme') || 'default';
-    document.body.className = '';
+
+    // Remove all existing theme classes
+    Array.from(document.body.classList).forEach(cls => {
+        if (cls.startsWith('theme-')) document.body.classList.remove(cls);
+    });
+
     if (theme !== 'default') {
         document.body.classList.add(`theme-${theme}`);
     }
