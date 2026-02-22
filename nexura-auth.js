@@ -430,6 +430,10 @@ document.addEventListener('DOMContentLoaded', () => {
     if (url && key) {
         initSupabase();
     } else {
+        // Enforce login redirection even if no Supabase config exists yet
+        if (!window.location.pathname.endsWith('login.html')) {
+            window.location.href = 'login.html';
+        }
         updateUIForAuth();
     }
 });
