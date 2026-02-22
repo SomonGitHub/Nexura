@@ -139,8 +139,7 @@ function updateUIForAuth() {
         let newOnClick = openAuthModal;
 
         if (currentSession) {
-            const tierBadge = `<span style="font-size: 0.6rem; padding: 2px 6px; border-radius: 4px; background: ${userTier === 'pro' ? 'var(--accent-color)' : '#444'}; color: white; margin-left: 8px; text-transform: uppercase; font-weight: 800;">${userTier}</span>`;
-            newHtml = `<i data-lucide="user-check" class="nav-icon"></i><div style="display: flex; flex-direction: column;"><span class="nav-text" style="font-size: 0.8rem; overflow: hidden; text-overflow: ellipsis; max-width: 120px; line-height: 1;">${currentSession.user.email}</span>${tierBadge}</div>`;
+            newHtml = `<i data-lucide="user-check" class="nav-icon"></i><div style="display: flex; flex-direction: column;"><span class="nav-text" style="font-size: 0.8rem; overflow: hidden; text-overflow: ellipsis; max-width: 120px; line-height: 1.2;">${currentSession.user.email}</span></div>`;
             newOnClick = () => {
                 if (confirm('Se déconnecter ?')) logout();
             };
