@@ -1034,54 +1034,99 @@
         }
 
         startScanBtn.addEventListener('click', async () => {
-            const url = localStorage.getItem('haUrl');
-            const token = localStorage.getItem('haToken');
+            const haUrl = localStorage.getItem('haUrl');
+            const haToken = localStorage.getItem('haToken');
+            const tuyaId = localStorage.getItem('tuyaClientId');
 
-            if (!url || !token) {
-                alert("Veuillez d'abord configurer l'URL et le jeton Home Assistant.");
+            if (!haUrl && !tuyaId) {
+                alert("Veuillez configurer Home Assistant ou Tuya avant de scanner.");
                 return;
             }
 
             scannerResults.innerHTML = '<p style="text-align: center; padding: 2rem;">Recherche en cours...</p>';
             startScanBtn.disabled = true;
-            importBtn.style.display = 'none'; // Hide import button during scan
+            importBtn.style.display = 'none';
+            scannedEntities = [];
+
+            const scanPromises = [];
+
+            // --- Home Assistant Scan ---
+            if (haUrl && haToken) {
+                scanPromises.push((async () => {
+                    try {
+                        const template = `
+                            [
+                            {% set entities = states.light | list + states.switch | list + states.sensor | list + states.cover | list + states.climate | list + states.binary_sensor | list %}
+                            {% for state in entities %}
+                            {
+                            "entity_id": {{ state.entity_id | tojson }},
+                            "area_name": {{ area_name(state.entity_id) | default("") | tojson }},
+                            "friendly_name": {{ state.attributes.friendly_name | default(state.entity_id) | tojson }},
+                            "source": "ha"
+                            }{{ "," if not loop.last }}
+                            {% endfor %}
+                            ]`.trim();
+
+                        const response = await fetch(`${haUrl}/api/template`, {
+                            method: 'POST',
+                            headers: { "Authorization": `Bearer ${haToken}`, "Content-Type": "application/json" },
+                            body: JSON.stringify({ template })
+                        });
+
+                        if (response.ok) {
+                            const results = await response.json();
+                            scannedEntities.push(...results);
+                        }
+                    } catch (e) { console.error("HA Scan failed", e); }
+                })());
+            }
+
+            // --- Tuya Scan ---
+            if (tuyaId) {
+                scanPromises.push((async () => {
+                    try {
+                        // 1. Get Token
+                        const tokenRes = await fetch(`/api/tuya/token?userId=${window.nexuraUser?.id}`);
+                        const tokenData = await tokenRes.json();
+
+                        if (tokenData.success && tokenData.result) {
+                            const accessToken = tokenData.result.access_token;
+
+                            // 2. Get Devices
+                            const proxyRes = await fetch('/api/tuya/proxy', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    userId: window.nexuraUser?.id,
+                                    accessToken: accessToken,
+                                    tuyaPath: `/v1.0/users/${tokenData.result.uid}/devices`,
+                                    method: 'GET'
+                                })
+                            });
+
+                            const devicesData = await proxyRes.json();
+                            if (devicesData.success && devicesData.result) {
+                                const tuyaItems = devicesData.result.map(d => ({
+                                    entity_id: d.id,
+                                    friendly_name: d.name,
+                                    area_name: d.room_name || "",
+                                    source: "tuya",
+                                    category: d.category
+                                }));
+                                scannedEntities.push(...tuyaItems);
+                            }
+                        }
+                    } catch (e) { console.error("Tuya Scan failed", e); }
+                })());
+            }
 
             try {
-                // Fetch states AND area names using a template
-                const template = `
-            [
-            {% set entities = states.light | list + states.switch | list + states.sensor | list + states.cover | list + states.climate | list + states.binary_sensor | list %}
-            {% for state in entities %}
-            {
-            "entity_id": {{ state.entity_id | tojson }},
-            "area_name": {{ area_name(state.entity_id) | default("") | tojson }},
-            "friendly_name": {{ state.attributes.friendly_name | default(state.entity_id) | tojson }}
-            }{{ "," if not loop.last }}
-            {% endfor %}
-            ]`.trim();
-
-                const response = await fetch(`${url}/api/template`, {
-                    method: 'POST',
-                    headers: {
-                        "Authorization": `Bearer ${token}`,
-                        "Content-Type": "application/json"
-                    },
-                    body: JSON.stringify({ template: template })
-                });
-
-                if (response.ok) {
-                    const text = await response.text();
-                    scannedEntities = JSON.parse(text);
-                    renderScannerResults();
-                    importBtn.style.display = 'block';
-                } else {
-                    const errorText = await response.text();
-                    console.error("HA Template Error:", errorText);
-                    throw new Error("HA Error");
-                }
+                await Promise.all(scanPromises);
+                renderScannerResults();
+                if (scannedEntities.length > 0) importBtn.style.display = 'block';
             } catch (err) {
                 console.error("Scan error:", err);
-                scannerResults.innerHTML = `<p style="text-align: center; color: #ef4444; padding: 2rem;">Erreur lors du scan (${err.message})</p>`;
+                scannerResults.innerHTML = `<p style="text-align: center; color: #ef4444; padding: 2rem;">Erreur lors du scan.</p>`;
             } finally {
                 startScanBtn.disabled = false;
                 lucide.createIcons();
@@ -1098,7 +1143,7 @@
             scannerResults.innerHTML = '';
 
             const filtered = scannedEntities.filter(e => {
-                const searchStr = `${e.entity_id} ${e.friendly_name} ${e.area_name || ''}`.toLowerCase();
+                const searchStr = `${e.entity_id} ${e.friendly_name} ${e.area_name || ''} ${e.source || ''}`.toLowerCase();
                 return searchStr.includes(filter);
             });
 
@@ -1108,21 +1153,40 @@
             }
 
             filtered.forEach(e => {
-                const domain = e.entity_id.split('.')[0];
-                const type = domain === 'cover' ? 'shutter' : domain;
-                const friendlyName = e.friendly_name || e.entity_id;
-                const haArea = e.area_name || null;
+                let type = 'light';
+                let domain = 'ha';
 
+                if (e.source === 'tuya') {
+                    domain = 'tuya';
+                    // Tuya category mapping (simplified)
+                    // https://developer.tuya.com/en/docs/iot/standard-description?id=K9i5ql3v98hn3
+                    if (e.category === 'kg' || e.category === 'cz') type = 'switch';
+                    else if (e.category === 'cl') type = 'shutter';
+                    else if (e.category === 'ws') type = 'sensor';
+                    else type = 'light';
+                } else {
+                    const haDomain = e.entity_id.split('.')[0];
+                    type = haDomain === 'cover' ? 'shutter' : haDomain;
+                }
+
+                const friendlyName = e.friendly_name || e.entity_id;
+                const area = e.area_name || null;
                 const exists = entities.some(stored => stored.haId === e.entity_id);
 
                 const item = document.createElement('label');
                 item.className = 'scan-item';
                 item.innerHTML = `
             <input type="checkbox" data-id="${e.entity_id}" data-name="${friendlyName}" data-type="${type}"
-                data-area="${haArea || ''}" ${exists ? 'disabled' : ''}>
+                data-area="${area || ''}" data-source="${domain}" ${exists ? 'disabled' : ''}>
             <div class="scan-item-info">
-                <h4>${friendlyName} ${exists ? '<span style="color:var(--accent-color); font-size:0.7rem;">(Déjà ajouté)</span>' : ''}</h4>
-                <p>${e.entity_id} ${haArea ? `• <span style="color: var(--accent-color)">${haArea}</span>` : ''}</p>
+                <h4>
+                    ${friendlyName} 
+                    ${exists ? '<span style="color:var(--accent-color); font-size:0.7rem;">(Déjà ajouté)</span>' : ''}
+                    <span style="font-size:0.65rem; padding: 2px 6px; border-radius: 4px; background: ${domain === 'tuya' ? '#FF5500' : '#03A9F4'}; color: white; margin-left: 8px;">
+                        ${domain === 'tuya' ? 'TUYA' : 'HA'}
+                    </span>
+                </h4>
+                <p>${e.entity_id} ${area ? `• <span style="color: var(--accent-color)">${area}</span>` : ''}</p>
             </div>
                 `;
                 scannerResults.appendChild(item);
@@ -1150,21 +1214,22 @@
                 if (!entities.some(e => e.haId === s.entity_id)) {
                     if (window.isFeatureAllowed('entities', entities.length)) {
                         // Create room if it's new
-                        if (s.area_name) { // Use area_name for room creation
+                        if (s.area_name) {
                             const roomId = slugify(s.area_name);
                             if (!rooms.some(r => r.id === roomId)) {
                                 if (window.isFeatureAllowed('rooms', rooms.length)) {
                                     rooms.push({ id: roomId, name: s.area_name });
                                 }
                             }
-                            s.roomId = roomId; // Assign the generated roomId to the scanned entity
+                            s.roomId = roomId;
                         }
 
                         entities.push({
                             name: s.friendly_name || s.entity_id,
                             type: s.type,
                             haId: s.entity_id,
-                            roomId: s.roomId || null // Use the assigned roomId or null
+                            roomId: s.roomId || null,
+                            source: s.source || 'ha'
                         });
                         added++;
                     }

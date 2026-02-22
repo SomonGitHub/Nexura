@@ -83,6 +83,7 @@ async function checkSession() {
     currentSession = session;
 
     if (currentSession) {
+        window.nexuraUser = currentSession.user;
         await fetchUserTier();
 
         const pulled = await syncFromCloud(); // Pull existing data first
