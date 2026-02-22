@@ -37,7 +37,7 @@ const UI = {
             case 'climate': return 'thermometer';
             case 'sensor': return 'gauge';
             case 'energy': return 'zap';
-            case 'binary_sensor': return 'alert-circle';
+            case 'binary_sensor': return 'circle-dot'; // Default for generic
             case 'battery': return 'battery';
             case 'empty': return 'square-dashed';
             default: return 'help-circle';
@@ -228,9 +228,11 @@ const UI = {
                 labels = { on: 'Mouvement', off: 'Calme' };
                 icon = 'unfold-more';
             } else if (variant === 'door' || devClass === 'door') {
-                labels = { on: 'Ouvert', off: 'Fermé' };
-                icon = 'door-open';
-                icon = 'frame';
+                labels = { on: 'Ouverte', off: 'Fermée' };
+                icon = isActive ? 'door-open' : 'door-closed';
+            } else if (variant === 'window' || devClass === 'window') {
+                labels = { on: 'Ouverte', off: 'Fermée' };
+                icon = isActive ? 'layout' : 'square';
             } else if (devClass === 'connectivity') {
                 labels = { on: 'Connecté', off: 'Déconnecté' };
                 icon = 'wifi';
