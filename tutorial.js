@@ -87,3 +87,6 @@ function finishTutorial() {
 
 window.startTutorial = startTutorial;
 window.nextStep = nextStep;
+
+// Signal that tutorial assets are loaded
+window.dispatchEvent(new CustomEvent('tutorialReady'));

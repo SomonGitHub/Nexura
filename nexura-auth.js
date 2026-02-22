@@ -95,8 +95,17 @@ async function checkSession() {
 
         // Onboarding Check: If no HA URL configured and on Dashboard, show tutorial
         const haUrl = localStorage.getItem('haUrl');
-        if (!haUrl && window.location.pathname.includes('index.html') && window.startTutorial) {
-            window.startTutorial();
+        const isDashboard = !isLoginPage &&
+            !window.location.pathname.includes('settings') &&
+            !window.location.pathname.includes('categories') &&
+            !window.location.pathname.includes('room.html');
+
+        if (!haUrl && isDashboard) {
+            if (window.startTutorial) {
+                window.startTutorial();
+            } else {
+                window.addEventListener('tutorialReady', () => window.startTutorial());
+            }
         }
 
         if (isLoginPage) {
