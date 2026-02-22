@@ -93,14 +93,16 @@ async function checkSession() {
             await syncToCloud();
         }
 
-        // Onboarding Check: If no HA URL configured and on Dashboard, show tutorial
+        // Onboarding Check: If no HA and no Tuya URL/ID configured and on Dashboard, show tutorial
         const haUrl = localStorage.getItem('haUrl');
+        const tuyaId = localStorage.getItem('tuyaClientId');
+
         const isDashboard = !isLoginPage &&
             !window.location.pathname.includes('settings') &&
             !window.location.pathname.includes('categories') &&
             !window.location.pathname.includes('room.html');
 
-        if (!haUrl && isDashboard) {
+        if (!haUrl && !tuyaId && isDashboard) {
             if (window.startTutorial) {
                 window.startTutorial();
             } else {
