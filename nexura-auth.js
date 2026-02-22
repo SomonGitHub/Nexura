@@ -155,16 +155,7 @@ function updateUIForAuth() {
 
 
 function isFeatureAllowed(feature, currentCount = 0) {
-    if (window.userTier === 'pro') return true;
-
-    const limits = {
-        'entities': 10,
-        'rooms': 5
-    };
-
-    if (limits[feature] !== undefined) {
-        return currentCount < limits[feature];
-    }
+    // SaaS Choice: No hard blocking for now, focus on donation system
     return true;
 }
 window.isFeatureAllowed = isFeatureAllowed;
