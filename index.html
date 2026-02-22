@@ -747,6 +747,26 @@ CREATE POLICY "Users can manage their entities" ON public.entities FOR ALL USING
     </script>
     <script src="nexura-auth.js"></script>
 
+    <!-- Onboarding Tutorial Modal -->
+    <div class="tutorial-overlay" id="tutorialOverlay">
+        <div class="tutorial-card">
+            <div id="tutorialContent" style="transition: opacity 0.3s ease;">
+                <!-- Content injected by tutorial.js -->
+            </div>
+            <div class="tutorial-footer">
+                <div class="tutorial-dots">
+                    <div class="dot active"></div>
+                    <div class="dot"></div>
+                    <div class="dot"></div>
+                    <div class="dot"></div>
+                </div>
+                <button class="submit-btn" id="tutorialNextBtn" onclick="nextStep()"
+                    style="width: auto; margin: 0; padding: 0.6rem 1.5rem;">Suivant</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="tutorial.js"></script>
 </body>
 
 </html>
