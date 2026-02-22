@@ -72,38 +72,39 @@
         }
 
         .form-group {
-            margin-bottom: 1.5rem;
+            margin-bottom: 2rem;
             display: flex;
-            align-items: center;
-            gap: 1rem;
+            flex-direction: column;
+            gap: 0.8rem;
         }
 
-        .form-group label {
-            width: 120px;
-            font-size: 0.85rem;
-            font-weight: 600;
+        .label-row {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
             color: var(--text-secondary);
-            margin-bottom: 0;
-            flex-shrink: 0;
+        }
+
+        .label-row i {
+            width: 18px;
+            height: 18px;
+            color: var(--accent-color);
+        }
+
+        .label-row label {
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin: 0;
+            color: white;
         }
 
         .input-wrapper {
-            position: relative;
-        }
-
-        .input-wrapper i {
-            position: absolute;
-            left: 1rem;
-            top: 50%;
-            transform: translateY(-50%);
-            color: var(--text-secondary);
-            width: 18px;
-            pointer-events: none;
+            width: 100%;
         }
 
         .input-wrapper input {
             width: 100%;
-            padding: 0.8rem 1rem 0.8rem 2.8rem;
+            padding: 1rem 1.2rem;
             background: rgba(255, 255, 255, 0.05);
             border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 12px;
@@ -228,16 +229,20 @@
             <div id="authFormSection">
                 <form id="authForm">
                     <div class="form-group">
-                        <label>Adresse e-mail</label>
-                        <div class="input-wrapper">
+                        <div class="label-row">
                             <i data-lucide="mail"></i>
+                            <label>Adresse e-mail</label>
+                        </div>
+                        <div class="input-wrapper">
                             <input type="email" id="authEmail" placeholder="nom@exemple.com" required>
                         </div>
                     </div>
                     <div class="form-group">
-                        <label>Mot de passe</label>
-                        <div class="input-wrapper">
+                        <div class="label-row">
                             <i data-lucide="lock"></i>
+                            <label>Mot de passe</label>
+                        </div>
+                        <div class="input-wrapper">
                             <input type="password" id="authPassword" placeholder="••••••••" required>
                         </div>
                     </div>
