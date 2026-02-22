@@ -84,9 +84,14 @@ async function checkSession() {
 
     if (currentSession) {
         await fetchUserTier();
-        await syncFromCloud(); // Pull existing data first
+
+        const pulled = await syncFromCloud(); // Pull existing data first
         isInitialSyncDone = true; // Mark as ready to push
-        syncToCloud(); // Then push any local updates if necessary
+
+        if (pulled === false) {
+            console.log("Migration: Local data detected and cloud empty. Pushing...");
+            await syncToCloud();
+        }
 
         if (isLoginPage) {
             window.location.href = 'index.html';
@@ -266,6 +271,17 @@ async function syncFromCloud() {
 
         const { profile, rooms, entities } = data;
 
+        // Protection: If cloud is empty but local has data, don't overwrite!
+        const cloudIsEmpty = (!profile || !profile.id) && (!rooms || rooms.length === 0) && (!entities || entities.length === 0);
+        const localRooms = localStorage.getItem('domotique_rooms');
+        const localEntities = localStorage.getItem('domotique_entities');
+        const localHasData = (localRooms && localRooms !== '[]') || (localEntities && localEntities !== '[]');
+
+        if (cloudIsEmpty && localHasData) {
+            console.warn('Migration mode: Cloud empty, keeping local data.');
+            return false;
+        }
+
         if (profile) {
             if (profile.tier) window.userTier = profile.tier;
             if (profile.theme) applyTheme(profile.theme);
@@ -298,8 +314,10 @@ async function syncFromCloud() {
 
         console.log('✅ Récupération Cloud via Edge complète !');
         window.dispatchEvent(new CustomEvent('dataSynced'));
+        return true;
     } catch (err) {
         console.error('Erreur lors de la récupération via Edge:', err);
+        return null;
     }
 }
 window.syncFromCloud = syncFromCloud;
