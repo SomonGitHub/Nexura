@@ -38,6 +38,7 @@ const UI = {
             case 'sensor': return 'gauge';
             case 'energy': return 'zap';
             case 'binary_sensor': return 'alert-circle';
+            case 'battery': return 'battery';
             case 'empty': return 'square-dashed';
             default: return 'help-circle';
         }
