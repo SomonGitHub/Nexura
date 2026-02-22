@@ -1,0 +1,11 @@
+name = "nexura"
+compatibility_date = "2024-01-01"
+
+[pages_build_output_config]
+directory = "./"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "nexura_db"
+database_id = "c4e0c920-223c-4eca-bf84-ec33673d7045"
+migrations_dir = "db"

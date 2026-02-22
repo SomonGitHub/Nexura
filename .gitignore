@@ -1,0 +1,12 @@
+# System files
+.DS_Store
+Thumbs.db
+
+# Gemini/Antigravity internal data
+.gemini/
+brain/
+
+# Potential build/dependency artifacts
+node_modules/
+dist/
+.env

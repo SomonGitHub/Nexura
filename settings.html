@@ -1,0 +1,1173 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="view-transition" content="same-origin">
+    <title>Nexura | Paramètres</title>
+    <script src="protect.js"></script>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        body {
+            background-color: #06070A !important;
+            margin: 0;
+        }
+    </style>
+    <link rel="stylesheet" href="room.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- SaaS Infrastructure -->
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <script src="ui.js"></script>
+    <style>
+        .settings-section {
+            margin-bottom: 2rem;
+            padding: 1.5rem;
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 16px;
+            border: 1px solid var(--glass-border);
+        }
+
+        .settings-section h2 {
+            font-size: 1.1rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 1.5rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        .setting-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.25rem 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .setting-info h3 {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+
+        .setting-info p {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        input[type="text"],
+        input[type="password"],
+        select {
+            background: var(--surface-color);
+            border: 1px solid var(--glass-border);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            outline: none;
+            font-family: inherit;
+        }
+
+        /* Modal Styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(5px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background: var(--surface-color);
+            border: 1px solid var(--glass-border);
+            width: 90%;
+            max-width: 600px;
+            max-height: 80vh;
+            border-radius: 16px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+        }
+
+        .modal-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--glass-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-body {
+            padding: 1rem;
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        .modal-footer {
+            padding: 1rem;
+            border-top: 1px solid var(--glass-border);
+            display: flex;
+            justify-content: flex-end;
+            gap: 1rem;
+        }
+
+        .scan-item {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 0.75rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            cursor: pointer;
+        }
+
+        .scan-item:hover {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .scan-item input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+
+        .scan-item-info {
+            flex: 1;
+        }
+
+        .scan-item-info h4 {
+            font-size: 0.9rem;
+            margin-bottom: 0.1rem;
+        }
+
+        .scan-item-info p {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <script>
+                if (localStorage.getItem('sidebar_collapsed') === 'true') {
+                    document.getElementById('sidebar').classList.add('collapsed');
+                }
+            </script>
+            <nav class="nav-links" style="margin-top: 1rem;">
+                <a href="index.html" class="nav-item">
+                    <i data-lucide="layout-dashboard" class="nav-icon"></i>
+                    <span class="nav-text">Dashboard</span>
+                </a>
+                <a href="categories.html" class="nav-item">
+                    <i data-lucide="layers" class="nav-icon"></i>
+                    <span class="nav-text">Catégories</span>
+                </a>
+                <a href="settings.html" class="nav-item active">
+                    <i data-lucide="settings" class="nav-icon"></i>
+                    <span class="nav-text">Paramètres</span>
+                </a>
+
+                <a href="#" class="nav-item" id="navAccount" onclick="openAuthModal()">
+                    <i data-lucide="user" class="nav-icon"></i>
+                    <span class="nav-text">Mon Compte</span>
+                </a>
+            </nav>
+
+            <div style="margin-top: auto; padding: 1rem 0;">
+                <button id="toggleSidebar" class="nav-item"
+                    style="border: none; background: transparent; width: 100%; cursor: pointer;">
+                    <i data-lucide="chevron-left" class="nav-icon" id="sidebarIcon"></i>
+                    <span class="nav-text">Réduire</span>
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                <h1>Paramètres</h1>
+            </header>
+
+
+            <!-- Personnalisation Section (PRO Only) -->
+            <div class="settings-section">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <h2>Personnalisation</h2>
+                    <span id="themeTierBadge"
+                        style="display: none; font-size: 0.65rem; padding: 3px 8px; border-radius: 6px; background: var(--accent-color); color: white; font-weight: 800; letter-spacing: 0.5px;">PRO</span>
+                </div>
+                <div class="setting-item" id="themeSettingItem">
+                    <div class="setting-info">
+                        <h3>Thème visuel</h3>
+                        <p id="themeSubtext">Changez l'apparence globale de l'interface</p>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 1rem;">
+                        <select id="themeSelector" onchange="handleThemeChange()" style="min-width: 150px;">
+                            <option value="nexura">Nexura (Ultra)</option>
+                            <option value="default">Nexura (Sombre)</option>
+                            <option value="modern">Indigo Moderne (Premium)</option>
+                            <option value="light">Clarté (Lumineux)</option>
+                            <option value="forest">Forêt sauvage (Vert)</option>
+                            <option value="ocean">Abysses (Bleu)</option>
+                        </select>
+                    </div>
+                </div>
+                <p id="themeProNotice"
+                    style="display: none; font-size: 0.75rem; color: var(--accent-color); margin-top: 1rem;">
+                    <i data-lucide="lock" style="width: 12px; vertical-align: middle;"></i>
+                    Cette option est réservée aux membres <b>PRO</b>.
+                </p>
+            </div>
+
+            <!-- Support & Donation Section -->
+            <div class="settings-section">
+                <h2>Soutenir le projet</h2>
+                <div class="donation-card">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                        <div style="flex: 1;">
+                            <h3 style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+                                Buy Me a Coffee <span class="donation-badge">Supporteur</span>
+                            </h3>
+                            <p style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.4;">
+                                Nexura est un projet gratuit et indépendant. Si vous appréciez mon travail et
+                                souhaitez m'aider à payer les serveurs ou simplement m'offrir un café, votre soutien est
+                                grandement apprécié ! ☕
+                            </p>
+                        </div>
+                        <div style="background: rgba(255, 221, 0, 0.1); padding: 12px; border-radius: 12px;">
+                            <i data-lucide="heart" style="color: #FFDD00; width: 24px; height: 24px;"></i>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 1rem; margin-top: 0.5rem;">
+                        <a href="https://www.buymeacoffee.com/SimonV" target="_blank" class="bmc-button">
+                            <img src="https://cdn.buymeacoffee.com/buttons/bmc-new-btn-logo.svg" alt="BMC logo"
+                                class="bmc-icon">
+                            Offrir un café
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Home Assistant Section -->
+            <div class="settings-section">
+                <h2>Home Assistant</h2>
+                <div class="setting-item">
+                    <div class="setting-info">
+                        <h3>URL de l'instance</h3>
+                        <p>Ex: http://192.168.1.100:8123</p>
+                    </div>
+                    <input type="text" id="haUrl" placeholder="http://homeassistant.local:8123">
+                </div>
+                <div class="setting-item">
+                    <div class="setting-info">
+                        <h3>Jeton d'accès (Long-lived Token)</h3>
+                        <p>Généré dans votre profil Home Assistant</p>
+                    </div>
+                    <input type="password" id="haToken" placeholder="votre_jeton_ici">
+                </div>
+                <div class="setting-item">
+                    <div class="setting-info">
+                        <h3>Entité de Consommation</h3>
+                        <p>Ex: sensor.energy_consumption</p>
+                    </div>
+                    <input type="text" id="haEntityEnergy" placeholder="sensor.mon_compteur_energie">
+                </div>
+                <div class="setting-item" style="border-bottom: none; padding-bottom: 0;">
+                    <div class="setting-info">
+                        <h3>Configuration</h3>
+                        <p>Enregistrer et tester la connexion</p>
+                    </div>
+                    <button class="filter-btn active" style="width: 100%;" id="testConnBtn">Enregistrer &
+                        Tester</button>
+                </div>
+                <p style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 1rem;">
+                    <i data-lucide="info" style="width: 12px; vertical-align: middle;"></i>
+                    Note : Assurez-vous d'avoir autorisé l'origine dans votre `configuration.yaml` de Home Assistant
+                    (CORS).
+                </p>
+            </div>
+
+            <!-- Room Management Section -->
+            <div class="settings-section">
+                <h2>Gestion des Pièces</h2>
+                <div
+                    style="background: rgba(255,255,255,0.03); padding: 1rem; border-radius: 12px; border: 1px solid var(--glass-border); margin-bottom: 1.5rem;">
+                    <div style="display: flex; gap: 1rem; align-items: flex-end;">
+                        <div style="display: flex; flex-direction: column; gap: 0.5rem; flex: 1;">
+                            <label style="font-size: 0.75rem; color: var(--text-secondary);">Nom de la pièce</label>
+                            <input type="text" id="roomName" placeholder="Ex: Salon, Cuisine...">
+                        </div>
+                        <button class="filter-btn active" id="addRoomBtn"
+                            style="height: 38px; border-radius: 8px;">Ajouter</button>
+                    </div>
+                </div>
+                <div id="roomListContainer">
+                    <!-- Will be populated by JS -->
+                </div>
+            </div>
+
+            <!-- Entity Management Section -->
+            <div class="settings-section">
+                <div
+                    style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--glass-border);">
+                    <h2 style="margin-bottom: 0; border-bottom: none;">Gestion des Entités</h2>
+                    <button class="filter-btn" id="openScannerBtn"
+                        style="font-size: 0.8rem; display: flex; align-items: center; gap: 0.5rem;">
+                        <i data-lucide="search" style="width: 14px;"></i> Scanner
+                    </button>
+                </div>
+
+                <!-- Add Entity Form -->
+                <div
+                    style="background: rgba(255,255,255,0.03); padding: 1.5rem; border-radius: 12px; border: 1px solid var(--glass-border); margin-bottom: 2rem;">
+                    <h3 style="font-size: 0.9rem; margin-bottom: 1rem; color: var(--text-primary);">Ajouter une
+                        entité</h3>
+                    <div
+                        style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; align-items: flex-end;">
+                        <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                            <label style="font-size: 0.75rem; color: var(--text-secondary);">Nom à afficher</label>
+                            <input type="text" id="entityName" placeholder="Ex: Plafonnier Salon">
+                        </div>
+                        <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                            <label style="font-size: 0.75rem; color: var(--text-secondary);">Type</label>
+                            <select id="entityType">
+                                <option value="light">Lumière</option>
+                                <option value="shutter">Volet</option>
+                                <option value="sensor">Capteur</option>
+                                <option value="switch">Prise / Interrupteur</option>
+                                <option value="climate">Climatisation</option>
+                            </select>
+                        </div>
+                        <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                            <label style="font-size: 0.75rem; color: var(--text-secondary);">Pièce</label>
+                            <select id="entityRoom" class="room-selector">
+                                <option value="">Non classé</option>
+                            </select>
+                        </div>
+                        <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                            <label style="font-size: 0.75rem; color: var(--text-secondary);">Variante</label>
+                            <select id="entityVariant">
+                                <option value="">Standard</option>
+                                <option value="dimmer">Variateur (Lumière)</option>
+                            </select>
+                        </div>
+                        <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                            <label style="font-size: 0.75rem; color: var(--text-secondary);">Entité ID (HA)</label>
+                            <input type="text" id="entityHAId" placeholder="Ex: light.salon_main">
+                        </div>
+                        <button class="filter-btn active" id="addEntityBtn"
+                            style="height: 38px; border-radius: 8px;">Ajouter</button>
+                    </div>
+                </div>
+
+                <!-- Entity List -->
+                <div id="entityListContainer">
+                    <!-- Will be populated by JS -->
+                </div>
+            </div>
+
+    </div>
+    </main>
+    </div>
+
+    <!-- Scanner Modal -->
+    <div class="modal-overlay" id="scannerModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 style="font-size: 1.2rem; margin: 0;">Scanner Home Assistant</h2>
+                <button id="closeScannerBtn"
+                    style="background: none; border: none; color: var(--text-secondary); cursor: pointer;">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div style="margin-bottom: 1rem; position: relative;">
+                    <i data-lucide="search"
+                        style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); width: 16px; color: var(--text-secondary);"></i>
+                    <input type="text" id="scanSearchInput" placeholder="Rechercher une entité..."
+                        style="width: 100%; padding-left: 35px; height: 38px;">
+                </div>
+                <div id="scannerResults">
+                    <p style="text-align: center; color: var(--text-secondary); padding: 2rem;">Appuyez sur "Lancer le
+                        scan" pour voir vos entités.</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="filter-btn" id="startScanBtn">Lancer le scan</button>
+                <button class="filter-btn active" id="importBtn" style="display: none;">Importer la sélection</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Auth Modal -->
+    <div id="authModal" class="modal">
+        <div class="modal-content" style="max-width: 450px; padding: 0;">
+            <div
+                style="padding: 1.5rem; border-bottom: 1px solid var(--glass-border); display: flex; justify-content: space-between; align-items: center;">
+                <h2 id="authTitle" style="margin: 0; font-size: 1.2rem;">Connexion Cloud</h2>
+                <button onclick="closeAuthModal()"
+                    style="background: none; border: none; color: var(--text-secondary); cursor: pointer;"><i
+                        data-lucide="x"></i></button>
+            </div>
+
+            <div style="padding: 1.5rem; max-height: 70vh; overflow-y: auto;">
+                <!-- Main Benefit Highlight -->
+                <div
+                    style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.2); border-radius: 12px; padding: 1rem; margin-bottom: 1.5rem; display: flex; gap: 1rem; align-items: center;">
+                    <div
+                        style="background: #10b981; min-width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white;">
+                        <i data-lucide="shield-check" style="width: 20px;"></i>
+                    </div>
+                    <div>
+                        <h4 style="margin: 0; font-size: 0.85rem; color: #10b981;">Données Privées & Sécurisées</h4>
+                        <p style="margin: 0; font-size: 0.75rem; color: var(--text-secondary);">En auto-hébergeant votre
+                            base Supabase, vous êtes l'unique propriétaire de vos données.</p>
+                    </div>
+                </div>
+
+                <div id="authSetupUI"
+                    style="display: none; margin-bottom: 1.5rem; padding: 1rem; border: 1px dashed var(--accent-color); border-radius: 12px; background: rgba(0, 96, 178, 0.05);">
+                    <h3 style="font-size: 0.9rem; margin-top: 0; margin-bottom: 0.75rem;"><i data-lucide="settings"
+                            style="width: 14px; vertical-align: middle; margin-right: 5px;"></i> Configuration Supabase
+                    </h3>
+
+                    <!-- Quick Tutorial Steps -->
+                    <div style="display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1.25rem;">
+                        <div style="display: flex; gap: 0.75rem; font-size: 0.8rem;">
+                            <span
+                                style="background: var(--accent-color); color: white; width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.65rem;">1</span>
+                            <span>Créez un projet sur <a href="https://supabase.com" target="_blank"
+                                    style="color: var(--accent-color);">supabase.com</a></span>
+                        </div>
+                        <div style="display: flex; gap: 0.75rem; font-size: 0.8rem;">
+                            <span
+                                style="background: var(--accent-color); color: white; width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.65rem;">2</span>
+                            <span>Copiez l'URL et la "Anon Key" ci-dessous</span>
+                        </div>
+                        <div style="display: flex; gap: 0.75rem; font-size: 0.8rem;">
+                            <span
+                                style="background: var(--accent-color); color: white; width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.65rem;">3</span>
+                            <span>Cliquez sur "Initialiser la base" une fois enregistré</span>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                        <input type="text" id="supabaseUrl" placeholder="Supabase Project URL" style="width: 100%;">
+                        <input type="password" id="supabaseKey" placeholder="Project Anon Key" style="width: 100%;">
+                        <button onclick="saveSupabaseConfig()" class="filter-btn active"
+                            style="width: 100%; height: 38px;">Sauvegarder la config</button>
+                    </div>
+
+                    <!-- SQL Initializer Button (Hidden until saved) -->
+                    <div id="sqlInitSection"
+                        style="display: none; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--glass-border);">
+                        <button onclick="showSqlScript()" class="filter-btn"
+                            style="width: 100%; border-style: dashed; color: var(--accent-color);">
+                            <i data-lucide="database" style="width: 14px; margin-right: 5px;"></i> Initialiser le Schéma
+                            SQL
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Registration / Login Form -->
+                <form id="authForm" style="display: flex; flex-direction: column; gap: 1.25rem;">
+                    <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                        <label style="font-size: 0.75rem; color: var(--text-secondary);">Email</label>
+                        <input type="email" id="authEmail" required placeholder="votre@email.com" style="width: 100%;">
+                    </div>
+                    <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                        <label style="font-size: 0.75rem; color: var(--text-secondary);">Mot de passe</label>
+                        <input type="password" id="authPassword" required placeholder="••••••••" style="width: 100%;">
+                    </div>
+                    <button type="submit" class="filter-btn active"
+                        style="width: 100%; height: 42px; font-weight: 600;">Se connecter</button>
+                </form>
+
+                <div style="margin-top: 1.5rem; text-align: center; font-size: 0.85rem;">
+                    <span style="color: var(--text-secondary);" id="authToggleText">Pas encore de compte ?</span>
+                    <a href="#" onclick="toggleAuthMode()" id="authToggleBtn"
+                        style="color: var(--accent-color); text-decoration: none; font-weight: 600; margin-left: 0.5rem;">S'inscrire</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SQL Script Modal (Secondary) -->
+    <div id="sqlScriptModal" class="modal" style="display: none; z-index: 1100;">
+        <div class="modal-content" style="max-width: 600px; padding: 0;">
+            <div
+                style="padding: 1.5rem; border-bottom: 1px solid var(--glass-border); display: flex; justify-content: space-between; align-items: center;">
+                <h2 style="margin: 0; font-size: 1.1rem;">Schéma SQL Supabase</h2>
+                <button onclick="document.getElementById('sqlScriptModal').style.display = 'none'"
+                    style="background: none; border: none; color: var(--text-secondary); cursor: pointer;"><i
+                        data-lucide="x"></i></button>
+            </div>
+            <div style="padding: 1.5rem;">
+                <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1rem;">Copiez ce script et
+                    collez-le dans le <b>SQL Editor</b> de votre tableau de bord Supabase, puis cliquez sur <b>RUN</b>.
+                </p>
+                <div style="position: relative;">
+                    <pre id="sqlSource"
+                        style="background: #111; padding: 1rem; border-radius: 8px; font-size: 0.75rem; color: #10b981; overflow-x: auto; border: 1px solid #222; max-height: 250px;">
+-- 1. Profiles
+CREATE TABLE IF NOT EXISTS public.profiles (
+  id UUID REFERENCES auth.users NOT NULL PRIMARY KEY,
+  tier TEXT DEFAULT 'free',
+  theme TEXT DEFAULT 'default',
+  dashboard_config JSONB DEFAULT '[]'::jsonb,
+  ha_url TEXT,
+  ha_token_enc TEXT,
+  ha_entity_energy TEXT,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
+);
+
+-- 2. Rooms
+CREATE TABLE IF NOT EXISTS public.rooms (
+  id TEXT NOT NULL,
+  user_id UUID REFERENCES auth.users NOT NULL,
+  name TEXT NOT NULL,
+  PRIMARY KEY (id, user_id)
+);
+
+-- 3. Entities
+CREATE TABLE IF NOT EXISTS public.entities (
+  haId TEXT NOT NULL,
+  user_id UUID REFERENCES auth.users NOT NULL,
+  name TEXT NOT NULL,
+  type TEXT NOT NULL,
+  variant TEXT,
+  roomId TEXT,
+  PRIMARY KEY (haId, user_id)
+);
+
+-- RLS
+ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.rooms ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.entities ENABLE ROW LEVEL SECURITY;
+
+-- Policies
+CREATE POLICY "Users can see their own profile" ON public.profiles FOR SELECT USING (auth.uid() = id);
+CREATE POLICY "Users can update their own profile" ON public.profiles FOR UPDATE USING (auth.uid() = id);
+CREATE POLICY "Users can insert their own profile" ON public.profiles FOR INSERT WITH CHECK (auth.uid() = id);
+CREATE POLICY "Users can manage their rooms" ON public.rooms FOR ALL USING (auth.uid() = user_id);
+CREATE POLICY "Users can manage their entities" ON public.entities FOR ALL USING (auth.uid() = user_id);</pre>
+                    <button onclick="copySqlToClipboard()" class="filter-btn active"
+                        style="position: absolute; top: 10px; right: 10px; padding: 4px 10px; font-size: 0.7rem;">Copier</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="nexura-auth.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+        });
+        const sidebar = document.getElementById('sidebar');
+        const toggleBtn = document.getElementById('toggleSidebar');
+        const sidebarIcon = document.getElementById('sidebarIcon');
+
+        // Initial icon and text state based on persistence
+        if (sidebar.classList.contains('collapsed')) {
+            sidebarIcon.setAttribute('data-lucide', 'chevron-right');
+        }
+
+        toggleBtn.addEventListener('click', () => {
+            const isCollapsed = sidebar.classList.toggle('collapsed');
+            localStorage.setItem('sidebar_collapsed', isCollapsed);
+            sidebarIcon.setAttribute('data-lucide', isCollapsed ? 'chevron-right' : 'chevron-left');
+            lucide.createIcons();
+        });
+
+        // --- HA Persistence & Test Logic ---
+        const haUrlInput = document.getElementById('haUrl');
+        const haTokenInput = document.getElementById('haToken');
+        const haEntityInput = document.getElementById('haEntityEnergy');
+        const testBtn = document.getElementById('testConnBtn');
+
+        // Function to save all fields to localStorage
+        function saveHASettings() {
+            localStorage.setItem('haUrl', haUrlInput.value.trim().replace(/\/$/, ""));
+            localStorage.setItem('haToken', haTokenInput.value.trim());
+            localStorage.setItem('haEntityEnergy', haEntityInput.value.trim());
+            console.log("HA Settings saved to localStorage");
+        }
+
+        // Load settings
+        function loadHASettings() {
+            haUrlInput.value = localStorage.getItem('haUrl') || '';
+            haTokenInput.value = localStorage.getItem('haToken') || '';
+            haEntityInput.value = localStorage.getItem('haEntityEnergy') || '';
+        }
+
+        // Save immediately when user types
+        [haUrlInput, haTokenInput, haEntityInput].forEach(input => {
+            if (input) {
+                input.addEventListener('input', saveHASettings);
+            }
+        });
+
+        // Initialize on load
+        loadHASettings();
+
+        // Connection Test
+        if (testBtn) {
+            testBtn.addEventListener('click', async () => {
+                // Save one last time to be sure
+                saveHASettings();
+
+                const url = haUrlInput.value;
+                const token = haTokenInput.value;
+                const entity = haEntityInput.value;
+
+                if (!url || !token || !entity) {
+                    testBtn.textContent = 'Champs requis !';
+                    testBtn.style.backgroundColor = '#f59e0b';
+                    setTimeout(() => {
+                        testBtn.textContent = 'Enregistrer & Tester';
+                        testBtn.style.backgroundColor = 'var(--surface-color)';
+                    }, 2000);
+                    return;
+                }
+
+                testBtn.textContent = 'Connexion...';
+                testBtn.style.backgroundColor = 'var(--accent-color)';
+
+                try {
+                    // Timeout-able fetch
+                    const controller = new AbortController();
+                    const timeoutId = setTimeout(() => controller.abort(), 8000); // 8s timeout
+
+                    const response = await fetch(`${url}/api/states/${entity}`, {
+                        headers: {
+                            "Authorization": `Bearer ${token}`,
+                            "Content-Type": "application/json"
+                        },
+                        signal: controller.signal
+                    });
+
+                    clearTimeout(timeoutId);
+
+                    if (response.ok) {
+                        const data = await response.json();
+                        testBtn.textContent = `Connecté ✓ (${data.state})`;
+                        testBtn.style.backgroundColor = '#10b981';
+                        testBtn.style.borderColor = '#10b981';
+
+                        // Sync to cloud if logged in
+                        if (window.syncToCloud) {
+                            console.log("Triggering cloud sync after successful HA test...");
+                            window.syncToCloud();
+                        }
+                    } else {
+                        const errorMsg = response.status === 401 ? 'Jeton invalide' : `Erreur ${response.status}`;
+                        testBtn.textContent = errorMsg;
+                        testBtn.style.backgroundColor = '#ef4444';
+                        testBtn.style.borderColor = '#ef4444';
+                    }
+                } catch (err) {
+                    console.error("Connection failed:", err);
+                    testBtn.textContent = err.name === 'AbortError' ? 'Délai d\'attente dépassé' : 'Échec (CORS / Réseau)';
+                    testBtn.style.backgroundColor = '#ef4444';
+                    testBtn.style.borderColor = '#ef4444';
+                }
+
+                setTimeout(() => {
+                    testBtn.textContent = 'Enregistrer & Tester';
+                    testBtn.style.backgroundColor = 'var(--surface-color)';
+                    testBtn.style.borderColor = 'var(--glass-border)';
+                }, 4000);
+            });
+        }
+
+        // --- Helpers ---
+        function slugify(text) {
+            return text.toLowerCase()
+                .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+                .replace(/[^a-z0-9]/g, '_')
+                .replace(/_+/g, '_')
+                .replace(/^_|_$/g, '');
+        }
+
+        // --- Room Management ---
+        let rooms = JSON.parse(localStorage.getItem('domotique_rooms')) || [];
+        const roomListContainer = document.getElementById('roomListContainer');
+        const roomNameInput = document.getElementById('roomName');
+        const addRoomBtn = document.getElementById('addRoomBtn');
+
+        function renderRooms() {
+            if (!roomListContainer) return;
+            roomListContainer.innerHTML = '';
+            if (rooms.length === 0) {
+                roomListContainer.innerHTML = '<p style="text-align: center; color: var(--text-secondary); padding: 1rem;">Aucune pièce créée.</p>';
+            }
+
+            // Sort rooms alphabetically
+            const sortedRooms = [...rooms].sort((a, b) => a.name.localeCompare(b.name, 'fr', { sensitivity: 'base' }));
+
+            sortedRooms.forEach(room => {
+                const item = document.createElement('div');
+                item.className = 'setting-item';
+                item.innerHTML = `
+            <div class="setting-info">
+                <h3>${room.name}</h3>
+                <p>ID: ${room.id}</p>
+            </div>
+            <button class="filter-btn" style="border: none; color: #ef4444; background: transparent; padding: 0.5rem;"
+                onclick="deleteRoom('${room.id}')">
+                <i data-lucide="trash-2" style="width: 18px;"></i>
+            </button>
+            `;
+                roomListContainer.appendChild(item);
+            });
+            lucide.createIcons();
+            updateRoomSelectors();
+        }
+
+        window.deleteRoom = function (id) {
+            rooms = rooms.filter(r => r.id !== id);
+            localStorage.setItem('domotique_rooms', JSON.stringify(rooms));
+            // Unassign entities
+            entities = entities.map(e => e.roomId === id ? { ...e, roomId: null } : e);
+            localStorage.setItem('domotique_entities', JSON.stringify(entities));
+            renderRooms();
+            renderEntities();
+            if (window.syncToCloud) window.syncToCloud();
+        };
+
+        if (addRoomBtn) {
+            addRoomBtn.addEventListener('click', () => {
+                if (!window.isFeatureAllowed('rooms', rooms.length)) {
+                    alert("Limite atteinte : Le plan Gratuit est limité à 2 pièces. Passez à l'offre Pro pour un nombre illimité !");
+                    return;
+                }
+                const name = roomNameInput.value.trim();
+                if (!name) return;
+                const id = slugify(name);
+                if (rooms.some(r => r.id === id)) {
+                    alert("Cette pièce existe déjà.");
+                    return;
+                }
+                rooms.push({ id, name });
+                localStorage.setItem('domotique_rooms', JSON.stringify(rooms));
+                roomNameInput.value = '';
+                renderRooms();
+                if (window.syncToCloud) window.syncToCloud();
+            });
+        }
+
+        function updateRoomSelectors() {
+            const selectors = document.querySelectorAll('.room-selector');
+            selectors.forEach(select => {
+                const currentVal = select.value;
+                select.innerHTML = '<option value="">Non classé</option>';
+
+                // Sort rooms for dropdown
+                const sortedRooms = [...rooms].sort((a, b) => a.name.localeCompare(b.name, 'fr', { sensitivity: 'base' }));
+
+                sortedRooms.forEach(room => {
+                    const opt = document.createElement('option');
+                    opt.value = room.id;
+                    opt.textContent = room.name;
+                    select.appendChild(opt);
+                });
+                select.value = currentVal;
+            });
+        }
+
+        // --- Dynamic Entity Management ---
+        let entities = JSON.parse(localStorage.getItem('domotique_entities')) || [];
+        const entityNameInput = document.getElementById('entityName');
+        const entityTypeInput = document.getElementById('entityType');
+        const entityRoomInput = document.getElementById('entityRoom');
+        const entityHAIdInput = document.getElementById('entityHAId');
+        const addEntityBtn = document.getElementById('addEntityBtn');
+        const entityListContainer = document.getElementById('entityListContainer');
+
+        const typeLabels = {
+            light: 'Lumière',
+            shutter: 'Volet',
+            sensor: 'Capteur',
+            switch: 'Prise / Interrupteur',
+            climate: 'Climatisation',
+            binary_sensor: 'Détecteur'
+        };
+
+        function renderEntities() {
+            entityListContainer.innerHTML = '';
+
+            // Sort entities by type, then by name
+            const sortedEntities = [...entities].sort((a, b) => {
+                if (a.type !== b.type) return a.type.localeCompare(b.type);
+                return a.name.localeCompare(b.name);
+            });
+
+            if (sortedEntities.length === 0) {
+                entityListContainer.innerHTML = '<p style="text-align: center; color: var(--text-secondary); padding: 2rem;">Aucune entité configurée.</p>';
+                return;
+            }
+
+            let currentType = null;
+
+            sortedEntities.forEach((entity, index) => {
+                // Add header for type if it changes
+                if (entity.type !== currentType) {
+                    currentType = entity.type;
+                    const typeHeader = document.createElement('h3');
+                    typeHeader.style.cssText = 'font-size: 0.8rem; color: var(--accent-color); text-transform: uppercase; letter-spacing: 1px; margin: 1.5rem 0 0.75rem 0;';
+                    typeHeader.textContent = typeLabels[currentType];
+                    entityListContainer.appendChild(typeHeader);
+                }
+
+                const roomName = rooms.find(r => r.id === entity.roomId)?.name || 'Non classé';
+
+                const item = document.createElement('div');
+                item.className = 'setting-item';
+                let variantOptions = '<option value="">Standard</option>';
+                if (entity.type === 'light') {
+                    variantOptions += `<option value="dimmer" ${entity.variant === 'dimmer' ? 'selected' : ''}>Variateur</option>`;
+                } else if (entity.type === 'binary_sensor') {
+                    variantOptions += `
+                        <option value="presence" ${entity.variant === 'presence' ? 'selected' : ''}>Présence</option>
+                        <option value="door" ${entity.variant === 'door' ? 'selected' : ''}>Porte</option>
+                        <option value="window" ${entity.variant === 'window' ? 'selected' : ''}>Fenêtre</option>
+                    `;
+                }
+
+                item.innerHTML = `
+            <div class="setting-info">
+                <h3>${entity.name}</h3>
+                <p style="font-size: 0.75rem; color: var(--accent-color);">${roomName}</p>
+                <p>${entity.haId}</p>
+            </div>
+            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <select class="variant-selector" onchange="updateVariant('${entity.haId}', this.value)"
+                    style="font-size: 0.75rem; padding: 0.25rem;">
+                    ${variantOptions}
+                </select>
+                <select class="room-selector" onchange="assignRoom('${entity.haId}', this.value)"
+                    style="font-size: 0.75rem; padding: 0.25rem;">
+                    <option value="">Pièce...</option>
+                    ${rooms.map(r => `<option value="${r.id}" ${r.id === entity.roomId ? 'selected' : ''}>${r.name}</option>`).join('')}
+                </select>
+                <button class="filter-btn"
+                    style="border: none; color: #ef4444; background: transparent; padding: 0.5rem;"
+                    onclick="deleteEntity('${entity.haId}')">
+                    <i data-lucide="trash-2" style="width: 18px;"></i>
+                </button>
+            </div>
+            `;
+                entityListContainer.appendChild(item);
+            });
+            lucide.createIcons();
+        }
+
+        window.assignRoom = function (haId, roomId) {
+            entities = entities.map(e => e.haId === haId ? { ...e, roomId: roomId || null } : e);
+            localStorage.setItem('domotique_entities', JSON.stringify(entities));
+            renderEntities();
+            if (window.syncToCloud) window.syncToCloud();
+        };
+
+        window.updateVariant = function (haId, variant) {
+            entities = entities.map(e => e.haId === haId ? { ...e, variant: variant || null } : e);
+            localStorage.setItem('domotique_entities', JSON.stringify(entities));
+            renderEntities();
+            if (window.syncToCloud) window.syncToCloud();
+        };
+
+        window.deleteEntity = function (haId) {
+            entities = entities.filter(e => e.haId !== haId);
+            localStorage.setItem('domotique_entities', JSON.stringify(entities));
+            renderEntities();
+            if (window.syncToCloud) window.syncToCloud();
+        };
+
+        addEntityBtn.addEventListener('click', () => {
+            if (!window.isFeatureAllowed('entities', entities.length)) {
+                alert("Limite atteinte : Le plan Gratuit est limité à 10 entités. Passez à l'offre Pro pour un nombre illimité!");
+                return;
+            }
+            const name = entityNameInput.value.trim();
+            const type = entityTypeInput.value;
+            const roomId = entityRoomInput.value;
+            const haId = entityHAIdInput.value.trim();
+
+            if (!name || !haId) {
+                alert("Veuillez remplir tous les champs.");
+                return;
+            }
+
+            // Avoid duplicates
+            if (entities.some(e => e.haId === haId)) {
+                alert("Cette entité existe déjà.");
+                return;
+            }
+
+            const variant = document.getElementById('entityVariant').value || null;
+            entities.push({ name, type, haId, roomId: roomId || null, variant });
+            localStorage.setItem('domotique_entities', JSON.stringify(entities));
+
+            // Reset form
+            entityNameInput.value = '';
+            entityHAIdInput.value = '';
+
+            renderEntities();
+            if (window.syncToCloud) window.syncToCloud();
+        });
+
+        // --- Theme Logic ---
+        function initThemeUI() {
+            const selector = document.getElementById('themeSelector');
+            const badge = document.getElementById('themeTierBadge');
+            const notice = document.getElementById('themeProNotice');
+            const subtext = document.getElementById('themeSubtext');
+
+            const currentTheme = localStorage.getItem('sv_theme') || 'default';
+            if (selector) selector.value = currentTheme;
+
+            // Restriction check
+            const tier = window.userTier || 'free';
+            if (tier !== 'pro') {
+                if (selector) selector.disabled = true;
+                if (badge) badge.style.display = 'block';
+                if (notice) notice.style.display = 'block';
+                if (subtext) subtext.style.color = 'var(--accent-color)';
+            } else {
+                if (selector) selector.disabled = false;
+                if (badge) badge.style.display = 'none';
+                if (notice) notice.style.display = 'none';
+                if (subtext) subtext.style.color = '';
+            }
+        }
+
+        function handleThemeChange() {
+            const selector = document.getElementById('themeSelector');
+            if (!selector) return;
+
+            const theme = selector.value;
+            if (window.applyTheme) {
+                window.applyTheme(theme);
+                if (window.syncToCloud) window.syncToCloud();
+            }
+        }
+
+        // Call init after everything is loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            setTimeout(initThemeUI, 500); // Small delay to let svauth.js load tier
+        });
+
+        window.addEventListener('dataSynced', initThemeUI);
+
+        // Initial render
+        renderRooms();
+        renderEntities();
+        initThemeUI(); // Call initThemeUI here as well, as it's part of initial setup.
+
+        // Refresh on storage changes (e.g. from cloud sync in another tab or auth.js)
+        window.addEventListener('storage', (e) => {
+            if (e.key === 'domotique_rooms' || e.key === 'domotique_entities') {
+                rooms = JSON.parse(localStorage.getItem('domotique_rooms')) || [];
+                entities = JSON.parse(localStorage.getItem('domotique_entities')) || [];
+                renderRooms();
+                renderEntities();
+            }
+        });
+
+        // Custom event for same-tab updates from auth.js sync
+        window.addEventListener('dataSynced', () => {
+            rooms = JSON.parse(localStorage.getItem('domotique_rooms')) || [];
+            entities = JSON.parse(localStorage.getItem('domotique_entities')) || [];
+            renderRooms();
+            renderEntities();
+        });
+
+        // --- Scanner Logic ---
+        const scannerModal = document.getElementById('scannerModal');
+        const openScannerBtn = document.getElementById('openScannerBtn');
+        const closeScannerBtn = document.getElementById('closeScannerBtn');
+        const startScanBtn = document.getElementById('startScanBtn');
+        const scannerResults = document.getElementById('scannerResults');
+        const importBtn = document.getElementById('importBtn');
+
+        let scannedEntities = [];
+
+        openScannerBtn.addEventListener('click', () => {
+            scannerModal.style.display = 'flex';
+            lucide.createIcons(); // Ensure icons in modal are rendered
+        });
+
+        closeScannerBtn.addEventListener('click', () => {
+            scannerModal.style.display = 'none';
+        });
+
+        window.onclick = (event) => {
+            if (event.target == scannerModal) scannerModal.style.display = 'none';
+        }
+
+        startScanBtn.addEventListener('click', async () => {
+            const url = localStorage.getItem('haUrl');
+            const token = localStorage.getItem('haToken');
+
+            if (!url || !token) {
+                alert("Veuillez d'abord configurer l'URL et le jeton Home Assistant.");
+                return;
+            }
+
+            scannerResults.innerHTML = '<p style="text-align: center; padding: 2rem;">Recherche en cours...</p>';
+            startScanBtn.disabled = true;
+            importBtn.style.display = 'none'; // Hide import button during scan
+
+            try {
+                // Fetch states AND area names using a template
+                const template = `
+            [
+            {% set entities = states.light | list + states.switch | list + states.sensor | list + states.cover | list + states.climate | list + states.binary_sensor | list %}
+            {% for state in entities %}
+            {
+            "entity_id": {{ state.entity_id | tojson }},
+            "area_name": {{ area_name(state.entity_id) | default("") | tojson }},
+            "friendly_name": {{ state.attributes.friendly_name | default(state.entity_id) | tojson }}
+            }{{ "," if not loop.last }}
+            {% endfor %}
+            ]`.trim();
+
+                const response = await fetch(`${url}/api/template`, {
+                    method: 'POST',
+                    headers: {
+                        "Authorization": `Bearer ${token}`,
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({ template: template })
+                });
+
+                if (response.ok) {
+                    const text = await response.text();
+                    scannedEntities = JSON.parse(text);
+                    renderScannerResults();
+                    importBtn.style.display = 'block';
+                } else {
+                    const errorText = await response.text();
+                    console.error("HA Template Error:", errorText);
+                    throw new Error("HA Error");
+                }
+            } catch (err) {
+                console.error("Scan error:", err);
+                scannerResults.innerHTML = `<p style="text-align: center; color: #ef4444; padding: 2rem;">Erreur lors du scan (${err.message})</p>`;
+            } finally {
+                startScanBtn.disabled = false;
+                lucide.createIcons();
+            }
+        });
+
+        // Search logic
+        const scanSearchInput = document.getElementById('scanSearchInput');
+        scanSearchInput.addEventListener('input', () => {
+            renderScannerResults(scanSearchInput.value.toLowerCase());
+        });
+
+        function renderScannerResults(filter = '') {
+            scannerResults.innerHTML = '';
+
+            const filtered = scannedEntities.filter(e => {
+                const searchStr = `${e.entity_id} ${e.friendly_name} ${e.area_name || ''}`.toLowerCase();
+                return searchStr.includes(filter);
+            });
+
+            if (filtered.length === 0) {
+                scannerResults.innerHTML = `<p style="text-align: center; color: var(--text-secondary); padding: 2rem;">${scannedEntities.length === 0 ? 'Appuyez sur "Lancer le scan".' : 'Aucun résultat correspondant.'}</p>`;
+                return;
+            }
+
+            filtered.forEach(e => {
+                const domain = e.entity_id.split('.')[0];
+                const type = domain === 'cover' ? 'shutter' : domain;
+                const friendlyName = e.friendly_name || e.entity_id;
+                const haArea = e.area_name || null;
+
+                const exists = entities.some(stored => stored.haId === e.entity_id);
+
+                const item = document.createElement('label');
+                item.className = 'scan-item';
+                item.innerHTML = `
+            <input type="checkbox" data-id="${e.entity_id}" data-name="${friendlyName}" data-type="${type}"
+                data-area="${haArea || ''}" ${exists ? 'disabled' : ''}>
+            <div class="scan-item-info">
+                <h4>${friendlyName} ${exists ? '<span style="color:var(--accent-color); font-size:0.7rem;">(Déjà ajouté)</span>' : ''}</h4>
+                <p>${e.entity_id} ${haArea ? `• <span style="color: var(--accent-color)">${haArea}</span>` : ''}</p>
+            </div>
+                `;
+                scannerResults.appendChild(item);
+            });
+            lucide.createIcons();
+        }
+
+        importBtn.addEventListener('click', () => {
+            const checkboxes = scannerResults.querySelectorAll('input[type="checkbox"]:checked');
+            checkboxes.forEach(cb => {
+                // Mark selected entities for easier processing
+                const entityId = cb.dataset.id;
+                const scannedEntity = scannedEntities.find(e => e.entity_id === entityId);
+                if (scannedEntity) {
+                    scannedEntity.selected = true;
+                    scannedEntity.type = cb.dataset.type; // Ensure type is correctly mapped
+                }
+            });
+
+            const selected = scannedEntities.filter(e => e.selected);
+            if (selected.length === 0) return;
+
+            let added = 0;
+            selected.forEach(s => {
+                if (!entities.some(e => e.haId === s.entity_id)) {
+                    if (window.isFeatureAllowed('entities', entities.length)) {
+                        // Create room if it's new
+                        if (s.area_name) { // Use area_name for room creation
+                            const roomId = slugify(s.area_name);
+                            if (!rooms.some(r => r.id === roomId)) {
+                                if (window.isFeatureAllowed('rooms', rooms.length)) {
+                                    rooms.push({ id: roomId, name: s.area_name });
+                                }
+                            }
+                            s.roomId = roomId; // Assign the generated roomId to the scanned entity
+                        }
+
+                        entities.push({
+                            name: s.friendly_name || s.entity_id,
+                            type: s.type,
+                            haId: s.entity_id,
+                            roomId: s.roomId || null // Use the assigned roomId or null
+                        });
+                        added++;
+                    }
+                }
+            });
+
+            if (added < selected.length) {
+                alert(`Importation partielle: ${added} entités ajoutées. Le reste a été bloqué par les limites de votre plan Gratuit.`);
+            }
+            localStorage.setItem('domotique_rooms', JSON.stringify(rooms));
+            localStorage.setItem('domotique_entities', JSON.stringify(entities));
+            renderRooms();
+            renderEntities();
+            if (window.syncToCloud) window.syncToCloud();
+            scannerModal.style.display = 'none';
+        });
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="view-transition" content="same-origin">
+    <title>Nexura | Catégories</title>
+    <script src="protect.js"></script>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        body {
+            background-color: #06070A !important;
+            margin: 0;
+        }
+    </style>
+    <link rel="stylesheet" href="room.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- SaaS Infrastructure -->
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <style>
+        .filter-bar {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .filter-btn {
+            padding: 0.6rem 1.25rem;
+            background: var(--surface-color);
+            border: 1px solid var(--glass-border);
+            border-radius: 30px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .filter-btn.active {
+            background: var(--accent-color);
+            color: white;
+            border-color: var(--accent-color);
+            box-shadow: 0 4px 15px var(--accent-glow);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <script>
+                if (localStorage.getItem('sidebar_collapsed') === 'true') {
+                    document.getElementById('sidebar').classList.add('collapsed');
+                }
+            </script>
+            <nav class="nav-links" style="margin-top: 1rem;">
+                <a href="index.html" class="nav-item">
+                    <i data-lucide="layout-dashboard" class="nav-icon"></i>
+                    <span class="nav-text">Dashboard</span>
+                </a>
+                <a href="categories.html" class="nav-item active">
+                    <i data-lucide="layers" class="nav-icon"></i>
+                    <span class="nav-text">Catégories</span>
+                </a>
+                <a href="settings.html" class="nav-item">
+                    <i data-lucide="settings" class="nav-icon"></i>
+                    <span class="nav-text">Paramètres</span>
+                </a>
+
+                <a href="#" class="nav-item" id="navAccount" onclick="openAuthModal()">
+                    <i data-lucide="user" class="nav-icon"></i>
+                    <span class="nav-text">Mon Compte</span>
+                </a>
+            </nav>
+
+            <div style="margin-top: auto; padding: 1rem 0;">
+                <button id="toggleSidebar" class="nav-item"
+                    style="border: none; background: transparent; width: 100%; cursor: pointer;">
+                    <i data-lucide="chevron-left" class="nav-icon" id="sidebarIcon"></i>
+                    <span class="nav-text">Réduire</span>
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                <h1>Lumières</h1>
+                <button class="card" id="turnOffBtn" onclick="turnOffCategory()"
+                    style="padding: 0.75rem 1.5rem; background: #ef4444; color: white; border: none; font-weight: 600; display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                    <i data-lucide="power" style="width: 18px;"></i>
+                    Tout éteindre
+                </button>
+            </header>
+
+            <div class="filter-bar">
+                <button class="filter-btn active" onclick="setCategory('light', this)">Lumières</button>
+                <button class="filter-btn" onclick="setCategory('shutter', this)">Volets</button>
+                <button class="filter-btn" onclick="setCategory('switch', this)">Prises</button>
+                <button class="filter-btn" onclick="setCategory('sensor', this)">Capteurs</button>
+                <button class="filter-btn" onclick="setCategory('climate', this)">Climatisation</button>
+            </div>
+
+            <div class="device-grid" id="deviceGrid">
+                <!-- Entities will be populated here -->
+            </div>
+        </main>
+    </div>
+
+
+    <script src="ui.js"></script>
+    <script>
+        const haUrl = localStorage.getItem('haUrl');
+        const haToken = localStorage.getItem('haToken');
+        let currentFilter = 'light';
+
+        async function fetchCategoryStates() {
+            const grid = document.getElementById('deviceGrid');
+            const managedEntities = JSON.parse(localStorage.getItem('domotique_entities')) || [];
+
+            // Filter entities by type (category)
+            const typeEntities = managedEntities.filter(e => e.type === currentFilter);
+
+            if (typeEntities.length === 0) {
+                grid.innerHTML = `<p style="grid-column: 1/-1; text-align: center; color: var(--text-secondary); padding: 3rem;">Aucun appareil dans la catégorie "${currentFilter}".</p>`;
+                return;
+            }
+
+            try {
+                const response = await fetch(`${haUrl}/api/states`, {
+                    headers: { "Authorization": `Bearer ${haToken}` }
+                });
+                const allStates = await response.json();
+
+                UI.smartUpdateGrid('deviceGrid', typeEntities, allStates, {
+                    onClick: "handleCardClick(event, '${haId}', ${isActive_bool})",
+                    onAction: 'callHAService'
+                });
+            } catch (err) {
+                console.error("Fetch category states failed:", err);
+                if (!grid.querySelector('.card')) {
+                    grid.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: #ef4444; padding: 3rem;">Erreur de connexion HA.</p>';
+                }
+            }
+        }
+
+        window.callHAService = async (domain, service, entityId) => {
+            try {
+                await fetch(`${haUrl}/api/services/${domain}/${service}`, {
+                    method: 'POST',
+                    headers: {
+                        "Authorization": `Bearer ${haToken}`,
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({ entity_id: entityId })
+                });
+                setTimeout(fetchCategoryStates, 500);
+            } catch (err) {
+                console.error("Service call failed:", err);
+            }
+        };
+
+        window.handleCardClick = function (event, haId, isActive) {
+            if (event.target.closest('button')) return;
+            const domain = haId.split('.')[0];
+            if (domain === 'sensor') return;
+            const service = isActive ? 'turn_off' : 'turn_on';
+            window.callHAService(domain, service, haId);
+        };
+
+        function setCategory(type, element) {
+            currentFilter = type;
+            document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+            element.classList.add('active');
+            document.querySelector('h1').innerText = element.innerText;
+            fetchCategoryStates();
+        }
+
+        const sidebar = document.getElementById('sidebar');
+        const toggleBtn = document.getElementById('toggleSidebar');
+        const sidebarIcon = document.getElementById('sidebarIcon');
+
+        // Initial icon and text state based on persistence
+        if (sidebar.classList.contains('collapsed')) {
+            sidebarIcon.setAttribute('data-lucide', 'chevron-right');
+        }
+
+        toggleBtn.addEventListener('click', () => {
+            const isCollapsed = sidebar.classList.toggle('collapsed');
+            localStorage.setItem('sidebar_collapsed', isCollapsed);
+            sidebarIcon.setAttribute('data-lucide', isCollapsed ? 'chevron-right' : 'chevron-left');
+            UI.refreshIcons(sidebar);
+        });
+
+        async function turnOffCategory() {
+            const grid = document.getElementById('deviceGrid');
+            const managedEntities = JSON.parse(localStorage.getItem('domotique_entities')) || [];
+            const targets = managedEntities.filter(e => e.type === currentFilter && ['light', 'switch', 'shutter'].includes(e.type));
+
+            if (targets.length === 0) return;
+
+            const btn = document.getElementById('turnOffBtn');
+            btn.style.opacity = '0.5';
+            btn.style.pointerEvents = 'none';
+
+            try {
+                for (const target of targets) {
+                    const domain = target.haId.split('.')[0];
+                    const service = target.type === 'shutter' ? 'close_cover' : 'turn_off';
+                    await fetch(`${haUrl}/api/services/${domain}/${service}`, {
+                        method: 'POST',
+                        headers: {
+                            "Authorization": `Bearer ${haToken}`,
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify({ entity_id: target.haId })
+                    });
+                }
+                setTimeout(fetchCategoryStates, 500);
+            } catch (err) {
+                console.error("Turn off category failed:", err);
+            } finally {
+                btn.style.opacity = '1';
+                btn.style.pointerEvents = 'auto';
+            }
+        }
+
+        // Initial fetch
+        document.addEventListener('DOMContentLoaded', fetchCategoryStates);
+        UI.setInterval('category_refresh', fetchCategoryStates, 5000);
+    </script>
+    <script src="svauth.js"></script>
+    <!-- Auth Modal -->
+    <div id="authModal" class="modal">
+        <div class="modal-content" style="max-width: 450px; padding: 0;">
+            <div
+                style="padding: 1.5rem; border-bottom: 1px solid var(--glass-border); display: flex; justify-content: space-between; align-items: center;">
+                <h2 id="authTitle" style="margin: 0; font-size: 1.2rem;">Connexion Cloud</h2>
+                <button onclick="closeAuthModal()"
+                    style="background: none; border: none; color: var(--text-secondary); cursor: pointer;"><i
+                        data-lucide="x"></i></button>
+            </div>
+
+            <div style="padding: 1.5rem; max-height: 70vh; overflow-y: auto;">
+                <!-- Main Benefit Highlight -->
+                <div
+                    style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.2); border-radius: 12px; padding: 1rem; margin-bottom: 1.5rem; display: flex; gap: 1rem; align-items: center;">
+                    <div
+                        style="background: #10b981; min-width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white;">
+                        <i data-lucide="shield-check" style="width: 20px;"></i>
+                    </div>
+                    <div>
+                        <h4 style="margin: 0; font-size: 0.85rem; color: #10b981;">Données Privées & Sécurisées</h4>
+                        <p style="margin: 0; font-size: 0.75rem; color: var(--text-secondary);">En auto-hébergeant votre
+                            base Supabase, vous êtes l'unique propriétaire de vos données.</p>
+                    </div>
+                </div>
+
+                <div id="authSetupUI"
+                    style="display: none; margin-bottom: 1.5rem; padding: 1rem; border: 1px dashed var(--accent-color); border-radius: 12px; background: rgba(0, 96, 178, 0.05);">
+                    <h3 style="font-size: 0.9rem; margin-top: 0; margin-bottom: 0.75rem;"><i data-lucide="settings"
+                            style="width: 14px; vertical-align: middle; margin-right: 5px;"></i> Configuration Supabase
+                    </h3>
+
+                    <!-- Quick Tutorial Steps -->
+                    <div style="display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1.25rem;">
+                        <div style="display: flex; gap: 0.75rem; font-size: 0.8rem;">
+                            <span
+                                style="background: var(--accent-color); color: white; width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.65rem;">1</span>
+                            <span>Créez un projet sur <a href="https://supabase.com" target="_blank"
+                                    style="color: var(--accent-color);">supabase.com</a></span>
+                        </div>
+                        <div style="display: flex; gap: 0.75rem; font-size: 0.8rem;">
+                            <span
+                                style="background: var(--accent-color); color: white; width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.65rem;">2</span>
+                            <span>Copiez l'URL et la "Anon Key" ci-dessous</span>
+                        </div>
+                        <div style="display: flex; gap: 0.75rem; font-size: 0.8rem;">
+                            <span
+                                style="background: var(--accent-color); color: white; width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.65rem;">3</span>
+                            <span>Cliquez sur "Initialiser la base" une fois enregistré</span>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                        <input type="text" id="supabaseUrl" placeholder="Supabase Project URL" style="width: 100%;">
+                        <input type="password" id="supabaseKey" placeholder="Project Anon Key" style="width: 100%;">
+                        <button onclick="saveSupabaseConfig()" class="filter-btn active"
+                            style="width: 100%; height: 38px;">Sauvegarder la config</button>
+                    </div>
+
+                    <!-- SQL Initializer Button (Hidden until saved) -->
+                    <div id="sqlInitSection"
+                        style="display: none; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--glass-border);">
+                        <button onclick="showSqlScript()" class="filter-btn"
+                            style="width: 100%; border-style: dashed; color: var(--accent-color);">
+                            <i data-lucide="database" style="width: 14px; margin-right: 5px;"></i> Initialiser le Schéma
+                            SQL
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Registration / Login Form -->
+                <form id="authForm" style="display: flex; flex-direction: column; gap: 1.25rem;">
+                    <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                        <label style="font-size: 0.75rem; color: var(--text-secondary);">Email</label>
+                        <input type="email" id="authEmail" required placeholder="votre@email.com" style="width: 100%;">
+                    </div>
+                    <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                        <label style="font-size: 0.75rem; color: var(--text-secondary);">Mot de passe</label>
+                        <input type="password" id="authPassword" required placeholder="••••••••" style="width: 100%;">
+                    </div>
+                    <button type="submit" class="filter-btn active"
+                        style="width: 100%; height: 42px; font-weight: 600;">Se connecter</button>
+                </form>
+
+                <div style="margin-top: 1.5rem; text-align: center; font-size: 0.85rem;">
+                    <span style="color: var(--text-secondary);" id="authToggleText">Pas encore de compte ?</span>
+                    <a href="#" onclick="toggleAuthMode()" id="authToggleBtn"
+                        style="color: var(--accent-color); text-decoration: none; font-weight: 600; margin-left: 0.5rem;">S'inscrire</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SQL Script Modal (Secondary) -->
+    <div id="sqlScriptModal" class="modal" style="display: none; z-index: 1100;">
+        <div class="modal-content" style="max-width: 600px; padding: 0;">
+            <div
+                style="padding: 1.5rem; border-bottom: 1px solid var(--glass-border); display: flex; justify-content: space-between; align-items: center;">
+                <h2 style="margin: 0; font-size: 1.1rem;">Schéma SQL Supabase</h2>
+                <button onclick="document.getElementById('sqlScriptModal').style.display = 'none'"
+                    style="background: none; border: none; color: var(--text-secondary); cursor: pointer;"><i
+                        data-lucide="x"></i></button>
+            </div>
+            <div style="padding: 1.5rem;">
+                <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1rem;">Copiez ce script et
+                    collez-le dans le <b>SQL Editor</b> de votre tableau de bord Supabase, puis cliquez sur <b>RUN</b>.
+                </p>
+                <div style="position: relative;">
+                    <pre id="sqlSource"
+                        style="background: #111; padding: 1rem; border-radius: 8px; font-size: 0.75rem; color: #10b981; overflow-x: auto; border: 1px solid #222; max-height: 250px;">
+-- 1. Profiles
+CREATE TABLE IF NOT EXISTS public.profiles (
+  id UUID REFERENCES auth.users NOT NULL PRIMARY KEY,
+  tier TEXT DEFAULT 'free',
+  dashboard_config JSONB DEFAULT '[]'::jsonb,
+  ha_url TEXT,
+  ha_token_enc TEXT,
+  ha_entity_energy TEXT,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
+);
+
+-- 2. Rooms
+CREATE TABLE IF NOT EXISTS public.rooms (
+  id TEXT NOT NULL,
+  user_id UUID REFERENCES auth.users NOT NULL,
+  name TEXT NOT NULL,
+  PRIMARY KEY (id, user_id)
+);
+
+-- 3. Entities
+CREATE TABLE IF NOT EXISTS public.entities (
+  haId TEXT NOT NULL,
+  user_id UUID REFERENCES auth.users NOT NULL,
+  name TEXT NOT NULL,
+  type TEXT NOT NULL,
+  roomId TEXT,
+  PRIMARY KEY (haId, user_id)
+);
+
+-- RLS
+ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.rooms ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.entities ENABLE ROW LEVEL SECURITY;
+
+-- Policies
+CREATE POLICY "Users can see their own profile" ON public.profiles FOR SELECT USING (auth.uid() = id);
+CREATE POLICY "Users can update their own profile" ON public.profiles FOR UPDATE USING (auth.uid() = id);
+CREATE POLICY "Users can insert their own profile" ON public.profiles FOR INSERT WITH CHECK (auth.uid() = id);
+CREATE POLICY "Users can manage their rooms" ON public.rooms FOR ALL USING (auth.uid() = user_id);
+CREATE POLICY "Users can manage their entities" ON public.entities FOR ALL USING (auth.uid() = user_id);</pre>
+                    <button onclick="copySqlToClipboard()" class="filter-btn active"
+                        style="position: absolute; top: 10px; right: 10px; padding: 4px 10px; font-size: 0.7rem;">Copier</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="nexura-auth.js"></script>
+</body>
+
+</html>

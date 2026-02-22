@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="view-transition" content="same-origin">
+    <title>Nexura | Bienvenue</title>
+    <script src="protect.js"></script>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <style>
+        body {
+            background: radial-gradient(circle at center, #0F1219 0%, #06070A 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            overflow: hidden;
+        }
+
+        .login-container {
+            width: 100%;
+            max-width: 440px;
+            padding: 2rem;
+            animation: fadeIn 0.8s ease-out;
+        }
+
+        .login-card {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 24px;
+            padding: 3rem 2.5rem;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        .brand-header {
+            text-align: center;
+            margin-bottom: 2.5rem;
+        }
+
+        .logo-placeholder {
+            width: 64px;
+            height: 64px;
+            background: linear-gradient(135deg, var(--accent-color), #6366f1);
+            border-radius: 16px;
+            margin: 0 auto 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 0 30px rgba(var(--accent-color-rgb), 0.3);
+        }
+
+        .brand-header h1 {
+            font-size: 2.2rem;
+            font-weight: 800;
+            margin: 0;
+            letter-spacing: -0.02em;
+        }
+
+        .brand-header p {
+            color: var(--text-secondary);
+            font-size: 1rem;
+            margin-top: 0.5rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-bottom: 0.6rem;
+            color: var(--text-secondary);
+        }
+
+        .input-wrapper {
+            position: relative;
+        }
+
+        .input-wrapper i {
+            position: absolute;
+            left: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-secondary);
+            width: 18px;
+            pointer-events: none;
+        }
+
+        .input-wrapper input {
+            width: 100%;
+            padding: 0.8rem 1rem 0.8rem 2.8rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            color: white;
+            font-family: 'Inter', sans-serif;
+            transition: all 0.3s ease;
+        }
+
+        .input-wrapper input:focus {
+            outline: none;
+            border-color: var(--accent-color);
+            background: rgba(255, 255, 255, 0.08);
+            box-shadow: 0 0 0 4px rgba(var(--accent-color-rgb), 0.1);
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: 1rem;
+            background: var(--accent-color);
+            border: none;
+            border-radius: 12px;
+            color: white;
+            font-weight: 700;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 1rem;
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(var(--accent-color-rgb), 0.3);
+            filter: brightness(1.1);
+        }
+
+        .auth-toggle {
+            text-align: center;
+            margin-top: 1.5rem;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        .auth-toggle button {
+            background: none;
+            border: none;
+            color: var(--accent-color);
+            font-weight: 600;
+            cursor: pointer;
+            padding: 0;
+            margin-left: 0.4rem;
+        }
+
+        .auth-toggle button:hover {
+            text-decoration: underline;
+        }
+
+        /* Setup UI specific */
+        #authSetupUI {
+            margin-top: 2rem;
+            padding-top: 2rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            text-align: center;
+        }
+
+        #authSetupUI h3 {
+            font-size: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        #sqlInitSection {
+            background: rgba(245, 158, 11, 0.1);
+            border: 1px solid rgba(245, 158, 11, 0.2);
+            border-radius: 12px;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+            font-size: 0.85rem;
+            color: #fbbf24;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .bg-glow {
+            position: fixed;
+            width: 600px;
+            height: 600px;
+            background: var(--accent-color);
+            filter: blur(150px);
+            border-radius: 50%;
+            opacity: 0.05;
+            z-index: -1;
+            top: -300px;
+            right: -300px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="bg-glow"></div>
+    <div class="login-container">
+        <div class="login-card">
+            <div class="brand-header">
+                <div class="logo-placeholder">
+                    <i data-lucide="zap" style="color: white; width: 32px; height: 32px;"></i>
+                </div>
+                <h1 id="authTitle">Se connecter</h1>
+                <p>Bienvenue sur votre espace Nexura</p>
+            </div>
+
+
+            <!-- Login/Register Form -->
+            <div id="authFormSection">
+                <form id="authForm">
+                    <div class="form-group">
+                        <label>Adresse e-mail</label>
+                        <div class="input-wrapper">
+                            <i data-lucide="mail"></i>
+                            <input type="email" id="authEmail" placeholder="nom@exemple.com" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Mot de passe</label>
+                        <div class="input-wrapper">
+                            <i data-lucide="lock"></i>
+                            <input type="password" id="authPassword" placeholder="••••••••" required>
+                        </div>
+                    </div>
+                    <button type="submit" class="submit-btn" id="authSubmitBtn">C'est parti</button>
+                </form>
+
+                <div class="auth-toggle">
+                    <span id="authToggleText">Pas encore de compte ?</span>
+                    <button id="authToggleBtn" onclick="toggleAuthMode()">S'inscrire</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SQL Modal (Simplified) -->
+    <div id="sqlScriptModal"
+        style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 1000; align-items: center; justify-content: center; padding: 2rem;">
+        <div class="login-card" style="max-width: 600px; max-height: 80vh; overflow-y: auto;">
+            <h3>Script d'initialisation SQL</h3>
+            <p style="font-size: 0.85rem; margin-bottom: 1rem;">Copiez ce script et exécutez-le dans le "SQL Editor" de
+                votre dashboard Supabase.</p>
+            <pre id="sqlSource"
+                style="background: rgba(0,0,0,0.3); padding: 1rem; border-radius: 8px; font-size: 0.75rem; color: #10b981; overflow-x: auto;">
+-- 1. Create Profiles table
+CREATE TABLE IF NOT EXISTS public.profiles (
+  id UUID REFERENCES auth.users ON DELETE CASCADE PRIMARY KEY,
+  updated_at TIMESTAMP WITH TIME ZONE,
+  tier TEXT DEFAULT 'free',
+  dashboard_config JSONB DEFAULT '[]'::jsonb,
+  ha_url TEXT,
+  ha_token_enc TEXT,
+  ha_entity_energy TEXT,
+  theme TEXT DEFAULT 'default'
+);
+
+-- 2. Create Rooms table
+CREATE TABLE IF NOT EXISTS public.rooms (
+  id TEXT NOT NULL,
+  user_id UUID REFERENCES auth.users ON DELETE CASCADE NOT NULL,
+  name TEXT NOT NULL,
+  PRIMARY KEY (id, user_id)
+);
+
+-- 3. Create Entities table
+CREATE TABLE IF NOT EXISTS public.entities (
+  haid TEXT NOT NULL,
+  user_id UUID REFERENCES auth.users ON DELETE CASCADE NOT NULL,
+  name TEXT,
+  type TEXT,
+  variant TEXT,
+  roomid TEXT,
+  PRIMARY KEY (haid, user_id)
+);
+
+-- Enable RLS
+ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.rooms ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.entities ENABLE ROW LEVEL SECURITY;
+
+-- Set Policies
+CREATE POLICY "Users can see own profile" ON public.profiles FOR SELECT USING (auth.uid() = id);
+CREATE POLICY "Users can update own profile" ON public.profiles FOR UPSERT WITH CHECK (auth.uid() = id);
+CREATE POLICY "Users can manage own rooms" ON public.rooms FOR ALL USING (auth.uid() = user_id);
+CREATE POLICY "Users can manage own entities" ON public.entities FOR ALL USING (auth.uid() = user_id);
+            </pre>
+            <button onclick="copySqlToClipboard()" class="submit-btn" style="background: #444;">Copier le code</button>
+            <button onclick="document.getElementById('sqlScriptModal').style.display='none'" class="submit-btn"
+                style="background: transparent; border: 1px solid rgba(255,255,255,0.1); margin-top: 0.5rem;">Fermer</button>
+        </div>
+    </div>
+
+    <script src="ui.js"></script>
+    <script src="nexura-auth.js"></script>
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+
+</html>

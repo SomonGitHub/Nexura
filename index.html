@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="view-transition" content="same-origin">
+    <title>Nexura | Dashboard</title>
+    <script src="protect.js"></script>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        body {
+            background-color: #06070A !important;
+            margin: 0;
+        }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+    <!-- SaaS Infrastructure -->
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <script src="ui.js"></script>
+</head>
+
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <script>
+                if (localStorage.getItem('sidebar_collapsed') === 'true') {
+                    document.getElementById('sidebar').classList.add('collapsed');
+                }
+            </script>
+            <nav class="nav-links" style="margin-top: 1rem;">
+                <a href="index.html" class="nav-item active">
+                    <i data-lucide="layout-dashboard" class="nav-icon"></i>
+                    <span class="nav-text">Dashboard</span>
+                </a>
+                <a href="categories.html" class="nav-item">
+                    <i data-lucide="layers" class="nav-icon"></i>
+                    <span class="nav-text">Catégories</span>
+                </a>
+                <a href="settings.html" class="nav-item">
+                    <i data-lucide="settings" class="nav-icon"></i>
+                    <span class="nav-text">Paramètres</span>
+                </a>
+
+                <a href="#" class="nav-item" id="navAccount" onclick="openAuthModal()">
+                    <i data-lucide="user" class="nav-icon"></i>
+                    <span class="nav-text">Mon Compte</span>
+                </a>
+            </nav>
+
+            <div style="margin-top: auto; padding: 1rem 0;">
+                <button id="toggleSidebar" class="nav-item"
+                    style="border: none; background: transparent; width: 100%; cursor: pointer;">
+                    <i data-lucide="chevron-left" class="nav-icon" id="sidebarIcon"></i>
+                    <span class="nav-text">Réduire</span>
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                <h1>Tableau de bord</h1>
+            </header>
+
+            <!-- Dashboard Structure (Optimized) -->
+            <div class="dashboard-container">
+                <!-- Main Content Column (Left) -->
+                <div class="main-column">
+                    <!-- KPIs (States Summary) -->
+                    <section class="kpi-grid" id="kpiGrid">
+                        <div class="card kpi-card" id="kpiEnergy" style="display: none;">
+                            <span class="kpi-label">Consommation</span>
+                            <span class="kpi-value" id="energyValue">-- kW</span>
+                            <div style="height: 60px; margin-top: 5px;">
+                                <canvas id="energyChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="card kpi-card" id="kpiLights" style="display: none;">
+                            <span class="kpi-label">Lumières Allumées</span>
+                            <span class="kpi-value" id="lightsActiveCount">--</span>
+                            <p style="color: var(--text-secondary); font-size: 0.75rem;" id="lightsTotalCount">--</p>
+                        </div>
+                        <div class="card kpi-card" id="kpiShutters" style="display: none;">
+                            <span class="kpi-label">États Volets</span>
+                            <span class="kpi-value" id="shuttersStatus">--</span>
+                            <p style="color: var(--accent-color); font-size: 0.75rem;" id="shuttersDetail">--</p>
+                        </div>
+                    </section>
+                    <!-- Mes favoris -->
+                    <section style="margin-bottom: 2.5rem;">
+                        <div
+                            style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                            <h2 style="font-size: 1.25rem; margin: 0;">Mes favoris</h2>
+                            <button class="card" id="openAddCardBtn"
+                                style="padding: 0.5rem 1rem; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; border: 1px dashed var(--accent-color); background: rgba(0, 96, 178, 0.1); margin-top: 0; min-height: auto; flex-direction: row; height: 36px;">
+                                <i data-lucide="plus" style="width: 16px; color: var(--accent-color);"></i>
+                                <span
+                                    style="font-size: 0.85rem; font-weight: 600; color: var(--accent-color);">Ajouter</span>
+                            </button>
+                        </div>
+                        <div id="dynamicCardsGrid"
+                            style="display: grid; grid-template-columns: repeat(auto-fill, minmax(40px, 1fr)); gap: 1rem;">
+                            <!-- Dynamic cards -->
+                        </div>
+                    </section>
+                </div>
+
+                <!-- Right Sidebar Column -->
+                <aside class="sidebar-right">
+                    <section style="margin-bottom: 2rem;">
+                        <h2 style="margin-bottom: 1.5rem; font-size: 1rem;">Actions Rapides</h2>
+                        <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                            <div class="card" id="turnOffAllBtn"
+                                style="display: flex; flex-direction: row; align-items: center; justify-content: flex-start; gap: 1rem; cursor: pointer; min-height: 60px; padding: 0.75rem;"
+                                onclick="turnOffAll()">
+                                <div class="logo-icon"
+                                    style="background-color: #ef4444; box-shadow: 0 0 15px rgba(239, 68, 68, 0.4); width: 28px; height: 28px; min-width: 28px;">
+                                    <i data-lucide="power" style="color: white; width: 14px;"></i>
+                                </div>
+                                <span style="font-weight: 600; font-size: 0.8rem;">Tout éteindre</span>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Navigation par Pièce -->
+                    <section>
+                        <h2 style="margin-bottom: 1.5rem; font-size: 1rem;">Pièces</h2>
+                        <div class="rooms-scroll-container">
+                            <div id="roomCardsGrid"
+                                style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.5rem;">
+                                <!-- Rooms -->
+                            </div>
+                        </div>
+                    </section>
+                </aside>
+            </div>
+        </main>
+    </div>
+
+    <!-- Add Card Modal -->
+    <div id="addCardModal"
+        style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: none; justify-content: center; align-items: center; z-index: 1000; backdrop-filter: blur(5px);">
+        <div class="card"
+            style="width: 90%; max-width: 500px; max-height: 70vh; display: flex; flex-direction: column; padding: 0;">
+            <div
+                style="padding: 1.5rem; border-bottom: 1px solid var(--glass-border); display: flex; justify-content: space-between; align-items: center;">
+                <h2 style="font-size: 1.2rem; margin: 0;">Ajouter aux Favoris</h2>
+                <button id="closeModal"
+                    style="background: none; border: none; color: var(--text-secondary); cursor: pointer;"><i
+                        data-lucide="x"></i></button>
+            </div>
+            <div id="entitySelectionList" style="padding: 1rem; overflow-y: auto; flex: 1;">
+                <!-- List of controllable entities -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Auth Modal -->
+    <div id="authModal" class="modal">
+        <div class="modal-content" style="max-width: 450px; padding: 0;">
+            <div
+                style="padding: 1.5rem; border-bottom: 1px solid var(--glass-border); display: flex; justify-content: space-between; align-items: center;">
+                <h2 id="authTitle" style="margin: 0; font-size: 1.2rem;">Connexion Cloud</h2>
+                <button onclick="closeAuthModal()"
+                    style="background: none; border: none; color: var(--text-secondary); cursor: pointer;"><i
+                        data-lucide="x"></i></button>
+            </div>
+
+            <div style="padding: 1.5rem; max-height: 70vh; overflow-y: auto;">
+                <!-- Main Benefit Highlight -->
+                <div
+                    style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.2); border-radius: 12px; padding: 1rem; margin-bottom: 1.5rem; display: flex; gap: 1rem; align-items: center;">
+                    <div
+                        style="background: #10b981; min-width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white;">
+                        <i data-lucide="shield-check" style="width: 20px;"></i>
+                    </div>
+                    <div>
+                        <h4 style="margin: 0; font-size: 0.85rem; color: #10b981;">Données Privées & Sécurisées</h4>
+                        <p style="margin: 0; font-size: 0.75rem; color: var(--text-secondary);">En auto-hébergeant votre
+                            base Supabase, vous êtes l'unique propriétaire de vos données.</p>
+                    </div>
+                </div>
+
+                <div id="authSetupUI"
+                    style="display: none; margin-bottom: 1.5rem; padding: 1rem; border: 1px dashed var(--accent-color); border-radius: 12px; background: rgba(0, 96, 178, 0.05);">
+                    <h3 style="font-size: 0.9rem; margin-top: 0; margin-bottom: 0.75rem;"><i data-lucide="settings"
+                            style="width: 14px; vertical-align: middle; margin-right: 5px;"></i> Configuration Supabase
+                    </h3>
+
+                    <!-- Quick Tutorial Steps -->
+                    <div style="display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1.25rem;">
+                        <div style="display: flex; gap: 0.75rem; font-size: 0.8rem;">
+                            <span
+                                style="background: var(--accent-color); color: white; width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.65rem;">1</span>
+                            <span>Créez un projet sur <a href="https://supabase.com" target="_blank"
+                                    style="color: var(--accent-color);">supabase.com</a></span>
+                        </div>
+                        <div style="display: flex; gap: 0.75rem; font-size: 0.8rem;">
+                            <span
+                                style="background: var(--accent-color); color: white; width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.65rem;">2</span>
+                            <span>Copiez l'URL et la "Anon Key" ci-dessous</span>
+                        </div>
+                        <div style="display: flex; gap: 0.75rem; font-size: 0.8rem;">
+                            <span
+                                style="background: var(--accent-color); color: white; width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.65rem;">3</span>
+                            <span>Cliquez sur "Initialiser la base" une fois enregistré</span>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                        <input type="text" id="supabaseUrl" placeholder="Supabase Project URL" style="width: 100%;">
+                        <input type="password" id="supabaseKey" placeholder="Project Anon Key" style="width: 100%;">
+                        <button onclick="saveSupabaseConfig()" class="filter-btn active"
+                            style="width: 100%; height: 38px;">Sauvegarder la config</button>
+                    </div>
+
+                    <!-- SQL Initializer Button (Hidden until saved) -->
+                    <div id="sqlInitSection"
+                        style="display: none; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--glass-border);">
+                        <button onclick="showSqlScript()" class="filter-btn"
+                            style="width: 100%; border-style: dashed; color: var(--accent-color);">
+                            <i data-lucide="database" style="width: 14px; margin-right: 5px;"></i> Initialiser le Schéma
+                            SQL
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Registration / Login Form -->
+                <form id="authForm" style="display: flex; flex-direction: column; gap: 1.25rem;">
+                    <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                        <label style="font-size: 0.75rem; color: var(--text-secondary);">Email</label>
+                        <input type="email" id="authEmail" required placeholder="votre@email.com" style="width: 100%;">
+                    </div>
+                    <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                        <label style="font-size: 0.75rem; color: var(--text-secondary);">Mot de passe</label>
+                        <input type="password" id="authPassword" required placeholder="••••••••" style="width: 100%;">
+                    </div>
+                    <button type="submit" class="filter-btn active"
+                        style="width: 100%; height: 42px; font-weight: 600;">Se connecter</button>
+                </form>
+
+                <div style="margin-top: 1.5rem; text-align: center; font-size: 0.85rem;">
+                    <span style="color: var(--text-secondary);" id="authToggleText">Pas encore de compte ?</span>
+                    <a href="#" onclick="toggleAuthMode()" id="authToggleBtn"
+                        style="color: var(--accent-color); text-decoration: none; font-weight: 600; margin-left: 0.5rem;">S'inscrire</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SQL Script Modal (Secondary) -->
+    <div id="sqlScriptModal" class="modal" style="display: none; z-index: 1100;">
+        <div class="modal-content" style="max-width: 600px; padding: 0;">
+            <div
+                style="padding: 1.5rem; border-bottom: 1px solid var(--glass-border); display: flex; justify-content: space-between; align-items: center;">
+                <h2 style="margin: 0; font-size: 1.1rem;">Schéma SQL Supabase</h2>
+                <button onclick="document.getElementById('sqlScriptModal').style.display = 'none'"
+                    style="background: none; border: none; color: var(--text-secondary); cursor: pointer;"><i
+                        data-lucide="x"></i></button>
+            </div>
+            <div style="padding: 1.5rem;">
+                <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1rem;">Copiez ce script et
+                    collez-le dans le <b>SQL Editor</b> de votre tableau de bord Supabase, puis cliquez sur <b>RUN</b>.
+                </p>
+                <div style="position: relative;">
+                    <pre id="sqlSource"
+                        style="background: #111; padding: 1rem; border-radius: 8px; font-size: 0.75rem; color: #10b981; overflow-x: auto; border: 1px solid #222; max-height: 250px;">
+-- 1. Profiles
+CREATE TABLE IF NOT EXISTS public.profiles (
+  id UUID REFERENCES auth.users NOT NULL PRIMARY KEY,
+  tier TEXT DEFAULT 'free',
+  theme TEXT DEFAULT 'default',
+  dashboard_config JSONB DEFAULT '[]'::jsonb,
+  ha_url TEXT,
+  ha_token_enc TEXT,
+  ha_entity_energy TEXT,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now())
+);
+
+-- 2. Rooms
+CREATE TABLE IF NOT EXISTS public.rooms (
+  id TEXT NOT NULL,
+  user_id UUID REFERENCES auth.users NOT NULL,
+  name TEXT NOT NULL,
+  PRIMARY KEY (id, user_id)
+);
+
+-- 3. Entities
+CREATE TABLE IF NOT EXISTS public.entities (
+  haId TEXT NOT NULL,
+  user_id UUID REFERENCES auth.users NOT NULL,
+  name TEXT NOT NULL,
+  type TEXT NOT NULL,
+  roomId TEXT,
+  PRIMARY KEY (haId, user_id)
+);
+
+-- RLS
+ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.rooms ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.entities ENABLE ROW LEVEL SECURITY;
+
+-- Policies
+CREATE POLICY "Users can see their own profile" ON public.profiles FOR SELECT USING (auth.uid() = id);
+CREATE POLICY "Users can update their own profile" ON public.profiles FOR UPDATE USING (auth.uid() = id);
+CREATE POLICY "Users can insert their own profile" ON public.profiles FOR INSERT WITH CHECK (auth.uid() = id);
+CREATE POLICY "Users can manage their rooms" ON public.rooms FOR ALL USING (auth.uid() = user_id);
+CREATE POLICY "Users can manage their entities" ON public.entities FOR ALL USING (auth.uid() = user_id);</pre>
+                    <button onclick="copySqlToClipboard()" class="filter-btn active"
+                        style="position: absolute; top: 10px; right: 10px; padding: 4px 10px; font-size: 0.7rem;">Copier</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+        lucide.createIcons();
+
+        const sidebar = document.getElementById('sidebar');
+        const toggleBtn = document.getElementById('toggleSidebar');
+        const sidebarIcon = document.getElementById('sidebarIcon');
+
+        // Initial icon and text state based on persistence
+        if (sidebar.classList.contains('collapsed')) {
+            sidebarIcon.setAttribute('data-lucide', 'chevron-right');
+            const navText = toggleBtn.querySelector('.nav-text');
+            if (navText) navText.textContent = '';
+        }
+
+        toggleBtn.addEventListener('click', () => {
+            const isCollapsed = sidebar.classList.toggle('collapsed');
+            localStorage.setItem('sidebar_collapsed', isCollapsed);
+
+            if (isCollapsed) {
+                sidebarIcon.setAttribute('data-lucide', 'chevron-right');
+                const navText = toggleBtn.querySelector('.nav-text');
+                if (navText) navText.textContent = '';
+            } else {
+                sidebarIcon.setAttribute('data-lucide', 'chevron-left');
+                const navText = toggleBtn.querySelector('.nav-text');
+                if (navText) navText.textContent = 'Réduire';
+            }
+            lucide.createIcons();
+        });
+
+        const url = localStorage.getItem('haUrl');
+        const token = localStorage.getItem('haToken');
+        let dashboardCards = JSON.parse(localStorage.getItem('dashboard_cards')) || [];
+        let isRefreshing = false;
+
+        // --- Energy Chart Logic ---
+        let energyChart = null;
+        let energyHistory = JSON.parse(localStorage.getItem('energy_history')) || [];
+
+        function updateEnergyChart(value) {
+            const ctx = document.getElementById('energyChart').getContext('2d');
+            const now = new Date();
+            const timeLabel = now.getHours() + ":" + now.getMinutes().toString().padStart(2, '0');
+
+            energyHistory.push({ t: timeLabel, v: value });
+            if (energyHistory.length > 20) energyHistory.shift();
+            localStorage.setItem('energy_history', JSON.stringify(energyHistory));
+
+            const data = {
+                labels: energyHistory.map(h => h.t),
+                datasets: [{
+                    data: energyHistory.map(h => h.v),
+                    borderColor: '#0060B2',
+                    backgroundColor: 'rgba(0, 96, 178, 0.1)',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 0
+                }]
+            };
+
+            if (!energyChart) {
+                energyChart = new Chart(ctx, {
+                    type: 'line',
+                    data: data,
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            x: { display: false },
+                            y: { display: false }
+                        }
+                    }
+                });
+            } else {
+                energyChart.data = data;
+                energyChart.update('none');
+            }
+        }
+
+        async function fetchEnergyData() {
+            const haEnergyEntity = localStorage.getItem('haEntityEnergy');
+            const kpiEnergy = document.getElementById('kpiEnergy');
+            const energyValueEl = document.getElementById('energyValue');
+
+            if (!url || !token || !haEnergyEntity) {
+                if (kpiEnergy) kpiEnergy.style.display = 'none';
+                return;
+            }
+            if (kpiEnergy) kpiEnergy.style.display = 'flex';
+
+            try {
+                const response = await fetch(`${url}/api/states/${haEnergyEntity}`, {
+                    headers: { "Authorization": `Bearer ${token}` }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    const value = parseFloat(data.state).toFixed(2);
+                    const unit = data.attributes.unit_of_measurement || 'kW';
+                    UI.scrambleText(energyValueEl, `${value} ${unit}`);
+                    updateEnergyChart(parseFloat(value));
+                }
+            } catch (err) {
+                console.error("Energy fetch error:", err);
+            }
+        }
+
+        // --- SortableJS Init ---
+        new Sortable(dynamicCardsGrid, {
+            animation: 150,
+            ghostClass: 'sortable-ghost',
+            onEnd: function () {
+                const newOrder = Array.from(dynamicCardsGrid.children).map(child => child.getAttribute('data-ha-id'));
+                dashboardCards = newOrder;
+                localStorage.setItem('dashboard_cards', JSON.stringify(dashboardCards));
+                if (window.syncToCloud) window.syncToCloud();
+            }
+        });
+
+        async function callHAService(domain, service, entityId, data = {}) {
+            if (!url || !token) return;
+
+            // Optimistic UI Update
+            const card = document.querySelector(`.card[data-ha-id="${entityId}"]`);
+            if (card && (domain === 'light' || domain === 'switch')) {
+                const isActive = card.classList.contains('device-on');
+                card.classList.toggle('device-on');
+                const stateText = card.querySelector('.state-text');
+                if (stateText) stateText.textContent = isActive ? 'off' : 'on';
+                const iconContainer = card.querySelector('.device-icon');
+                if (iconContainer) {
+                    iconContainer.style.color = !isActive ? 'var(--accent-color)' : 'var(--text-secondary)';
+                }
+            }
+
+            if (!url || !token || url === 'null' || token === 'null') {
+                console.warn("HA Call cancelled: missing credentials");
+                return;
+            }
+
+            try {
+                await fetch(`${url}/api/services/${domain}/${service}`, {
+                    method: 'POST',
+                    headers: {
+                        "Authorization": `Bearer ${token}`,
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({ entity_id: entityId, ...data })
+                });
+                setTimeout(refreshDashboard, 800);
+            } catch (err) {
+                console.error("HA Service Call failed:", err);
+                refreshDashboard();
+            }
+        }
+
+        async function refreshDashboard() {
+            if (isRefreshing) return;
+
+            const currentUrl = localStorage.getItem('haUrl');
+            const currentToken = localStorage.getItem('haToken');
+
+            if (!currentUrl || !currentToken || currentUrl === 'null' || currentToken === 'null') {
+                console.log("Polling skipped: No HA credentials found.");
+                return;
+            }
+
+            isRefreshing = true;
+
+            const managedEntities = JSON.parse(localStorage.getItem('domotique_entities')) || [];
+
+            try {
+                // Fetch ALL states in one go
+                const response = await fetch(`${currentUrl}/api/states`, {
+                    headers: { "Authorization": `Bearer ${currentToken}` }
+                });
+                if (!response.ok) throw new Error("Fetch failed");
+                const allStates = await response.json();
+
+                // Toggle KPI Visibility
+                const hasEnergy = managedEntities.some(e => e.type === 'energy') || !!localStorage.getItem('haEntityEnergy');
+                const hasLights = managedEntities.some(e => e.type === 'light');
+                const hasShutters = managedEntities.some(e => e.type === 'shutter');
+
+                document.getElementById('kpiEnergy').style.display = hasEnergy ? 'flex' : 'none';
+                document.getElementById('kpiLights').style.display = hasLights ? 'flex' : 'none';
+                document.getElementById('kpiShutters').style.display = hasShutters ? 'flex' : 'none';
+
+                // Aggregation for KPIs
+                if (hasLights) {
+                    const lights = managedEntities.filter(e => e.type === 'light');
+                    const activeLights = lights.filter(l => {
+                        const s = allStates.find(st => st.entity_id === l.haId);
+                        return s && s.state === 'on';
+                    }).length;
+                    UI.scrambleText(document.getElementById('lightsActiveCount'), activeLights.toString());
+                    document.getElementById('lightsTotalCount').innerText = `Sur ${lights.length} appareils`;
+                }
+
+                if (hasShutters) {
+                    const shutters = managedEntities.filter(e => e.type === 'shutter');
+                    const openShutters = shutters.filter(l => {
+                        const s = allStates.find(st => st.entity_id === l.haId);
+                        return s && s.state === 'open';
+                    }).length;
+                    document.getElementById('shuttersStatus').innerText = openShutters === 0 ? 'Fermés' : (openShutters === shutters.length ? 'Ouverts' : 'Partiels');
+                    document.getElementById('shuttersDetail').innerText = `${openShutters} ouverts sur ${shutters.length}`;
+                }
+
+                // SMART UPDATE for Dashboard Cards
+                const dashboardEntities = dashboardCards.map(haId => {
+                    if (haId.startsWith('empty_block_')) {
+                        return { haId, name: 'Bloc vide', type: 'empty' };
+                    }
+                    return managedEntities.find(e => e.haId === haId);
+                }).filter(Boolean);
+
+                UI.smartUpdateGrid('dynamicCardsGrid', dashboardEntities, allStates, {
+                    showRemove: true,
+                    onRemove: "removeCard('${haId}')",
+                    onClick: "handleCardClick(event, '${haId}', ${isActive_bool})",
+                    emptyMessage: 'Aucun contrôle ajouté. Cliquez sur "+" pour commencer.'
+                });
+
+                // Render Room Cards
+                renderRoomCards(allStates);
+            } catch (e) {
+                console.error("Dashboard refresh error:", e);
+            } finally {
+                isRefreshing = false;
+            }
+        }
+
+        function renderRoomCards(allStates) {
+            const rooms = JSON.parse(localStorage.getItem('domotique_rooms')) || [];
+            const managedEntities = JSON.parse(localStorage.getItem('domotique_entities')) || [];
+            const grid = document.getElementById('roomCardsGrid');
+            if (!grid) return;
+
+            // Add "Non classé" if there are entities without a room
+            const unassignedCount = managedEntities.filter(e => !e.roomId).length;
+            const roomsToShow = [...rooms];
+            if (unassignedCount > 0) {
+                roomsToShow.push({ id: 'unassigned', name: 'Non classé' });
+            }
+
+            // Sort rooms alphabetically by name
+            roomsToShow.sort((a, b) => a.name.localeCompare(b.name, 'fr', { sensitivity: 'base' }));
+
+            if (roomsToShow.length === 0) {
+                grid.innerHTML = '<p style="color: var(--text-secondary); font-size: 0.85rem;">Aucune pièce configurée.</p>';
+                return;
+            }
+
+            // Room cards are less frequent/numerous, so simple refresh icon is enough
+            const newHtml = roomsToShow.map(room => {
+                const roomEntities = managedEntities.filter(e => e.roomId === room.id || (room.id === 'unassigned' && !e.roomId));
+                const lightsOn = roomEntities.filter(e => {
+                    if (e.type !== 'light') return false;
+                    const s = allStates.find(st => st.entity_id === e.haId);
+                    return s && s.state === 'on';
+                }).length;
+
+                const summary = lightsOn > 0 ? `${lightsOn} éclairage${lightsOn > 1 ? 's' : ''} ON` : `${roomEntities.length} appareil${roomEntities.length > 1 ? 's' : ''}`;
+
+                return `
+                    <div class="card clickable" onclick="window.location.href='room.html?id=${encodeURIComponent(room.id)}'" style="padding: 0.5rem; display: flex; flex-direction: row; align-items: center; justify-content: flex-start; gap: 0.5rem; min-height: 45px;">
+                        <div style="background: rgba(255,255,255,0.05); padding: 4px; border-radius: 6px; display: flex; align-items: center; justify-content: center; min-width: 24px;">
+                            <i data-lucide="home" style="width: 12px; height: 12px; color: var(--text-secondary);"></i>
+                        </div>
+                        <div style="overflow: hidden; text-align: left;">
+                            <h3 style="font-size: 0.75rem; margin: 0; white-space: nowrap; text-overflow: ellipsis; overflow: hidden;">${room.name}</h3>
+                            <p style="font-size: 0.6rem; color: var(--accent-color); margin: 0;">${lightsOn > 0 ? `${lightsOn} ON` : `${roomEntities.length} App.`}</p>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            if (grid.innerHTML !== newHtml) {
+                grid.innerHTML = newHtml;
+                UI.refreshIcons(grid);
+            }
+        }
+
+        window.handleCardClick = function (event, haId, isActive) {
+            if (event.target.closest('button')) return;
+            const domain = haId.split('.')[0];
+            if (domain === 'sensor') return; // Sensors are read-only
+            const service = isActive ? 'turn_off' : 'turn_on';
+            callHAService(domain, service, haId);
+        };
+
+        window.turnOffAll = async function () {
+            const managedEntities = JSON.parse(localStorage.getItem('domotique_entities')) || [];
+            const turnOffTargets = managedEntities.filter(e => e.type === 'light' || e.type === 'switch');
+
+            if (turnOffTargets.length === 0) return;
+
+            const turnOffBtn = document.getElementById('turnOffAllBtn');
+            turnOffBtn.style.opacity = '0.5';
+            turnOffBtn.style.pointerEvents = 'none';
+
+            try {
+                // Get current states to only turn off what's actually 'on'
+                const response = await fetch(`${url}/api/states`, {
+                    headers: { "Authorization": `Bearer ${token}` }
+                });
+                const allStates = await response.json();
+
+                for (const target of turnOffTargets) {
+                    const stateObj = allStates.find(s => s.entity_id === target.haId);
+                    if (stateObj && stateObj.state === 'on') {
+                        const domain = target.haId.split('.')[0];
+                        await fetch(`${url}/api/services/${domain}/turn_off`, {
+                            method: 'POST',
+                            headers: {
+                                "Authorization": `Bearer ${token}`,
+                                "Content-Type": "application/json"
+                            },
+                            body: JSON.stringify({ entity_id: target.haId })
+                        });
+                    }
+                }
+                setTimeout(refreshDashboard, 500);
+            } catch (err) {
+                console.error("Turn all off failed:", err);
+            } finally {
+                turnOffBtn.style.opacity = '1';
+                turnOffBtn.style.pointerEvents = 'auto';
+            }
+        };
+
+        function getIconForType(type) {
+            return UI.getIconForType(type);
+        }
+
+        function getControlUI(entity, stateData) {
+            return UI.getControlUI(entity, stateData, 'callHAService');
+        }
+
+        window.removeCard = function (haId) {
+            dashboardCards = dashboardCards.filter(id => id !== haId);
+            localStorage.setItem('dashboard_cards', JSON.stringify(dashboardCards));
+            refreshDashboard();
+            if (window.syncToCloud) window.syncToCloud();
+        };
+
+        openAddCardBtn.addEventListener('click', () => {
+            const managedEntities = JSON.parse(localStorage.getItem('domotique_entities')) || [];
+            const controllable = managedEntities.filter(e => ['light', 'shutter', 'switch', 'climate', 'sensor'].includes(e.type));
+
+            // Prepend Empty Block option
+            const emptyBlockItem = document.createElement('div');
+            emptyBlockItem.className = 'card';
+            emptyBlockItem.style.marginBottom = '0.5rem';
+            emptyBlockItem.style.cursor = 'pointer';
+            emptyBlockItem.style.display = 'flex';
+            emptyBlockItem.style.justifyContent = 'space-between';
+            emptyBlockItem.style.alignItems = 'center';
+            emptyBlockItem.style.border = '1px dashed var(--accent-color)';
+            emptyBlockItem.innerHTML = `
+                <div>
+                    <h4 style="margin: 0; font-size: 0.85rem; color: var(--accent-color);">+ Bloc vide</h4>
+                    <p style="margin: 0; font-size: 0.65rem; color: var(--text-secondary);">Ajouter un espaceur</p>
+                </div>
+                <i data-lucide="square-dashed" style="width: 16px; color: var(--accent-color)"></i>
+            `;
+            emptyBlockItem.onclick = () => {
+                const virtualId = `empty_block_${Date.now()}`;
+                dashboardCards.push(virtualId);
+                localStorage.setItem('dashboard_cards', JSON.stringify(dashboardCards));
+                addCardModal.style.display = 'none';
+                refreshDashboard();
+                if (window.syncToCloud) window.syncToCloud();
+            };
+            entitySelectionList.appendChild(emptyBlockItem);
+
+            controllable.forEach(e => {
+                const item = document.createElement('div');
+                item.className = 'card';
+                item.style.marginBottom = '0.5rem';
+                item.style.cursor = 'pointer';
+                item.style.display = 'flex';
+                item.style.justifyContent = 'space-between';
+                item.style.alignItems = 'center';
+                item.innerHTML = `
+                    <div>
+                        <h4 style="margin: 0; font-size: 0.85rem;">${e.name}</h4>
+                        <p style="margin: 0; font-size: 0.65rem; color: var(--text-secondary);">${e.haId}</p>
+                    </div>
+                    <i data-lucide="${dashboardCards.includes(e.haId) ? 'check-circle' : 'circle'}" style="width: 16px; color: ${dashboardCards.includes(e.haId) ? 'var(--accent-color)' : 'var(--text-secondary)'}"></i>
+                `;
+                item.onclick = () => toggleDashboardCard(e.haId);
+                entitySelectionList.appendChild(item);
+            });
+
+            addCardModal.style.display = 'flex';
+            UI.refreshIcons(entitySelectionList);
+        });
+
+        function toggleDashboardCard(haId) {
+            if (dashboardCards.includes(haId)) {
+                dashboardCards = dashboardCards.filter(id => id !== haId);
+            } else {
+                dashboardCards.push(haId);
+            }
+            localStorage.setItem('dashboard_cards', JSON.stringify(dashboardCards));
+            addCardModal.style.display = 'none';
+            refreshDashboard();
+            if (window.syncToCloud) window.syncToCloud();
+        }
+
+        closeModal.onclick = () => addCardModal.style.display = 'none';
+        window.onclick = (e) => { if (e.target === addCardModal) addCardModal.style.display = 'none'; };
+
+        fetchEnergyData();
+        refreshDashboard();
+        UI.setInterval('energy', fetchEnergyData, 30000);
+        UI.setInterval('dashboard', refreshDashboard, 5000);
+    </script>
+    <script src="nexura-auth.js"></script>
+
+</body>
+
+</html>
