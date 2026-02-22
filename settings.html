@@ -522,9 +522,10 @@
                 // Save one last time to be sure
                 saveHASettings();
 
-                const url = haUrlInput.value;
-                const token = haTokenInput.value;
-                const entity = haEntityInput.value;
+                // Sanitize URL for the test call
+                const url = haUrlInput.value.trim().replace(/\/$/, "");
+                const token = haTokenInput.value.trim();
+                const entity = haEntityInput.value.trim();
 
                 if (!url || !token) {
                     testBtn.textContent = 'Champs requis !';
@@ -544,8 +545,8 @@
                     const controller = new AbortController();
                     const timeoutId = setTimeout(() => controller.abort(), 8000); // 8s timeout
 
-                    // If entity is provided, test it. Otherwise test global config.
-                    const endpoint = entity ? `${url}/api/states/${entity}` : `${url}/api/config`;
+                    // If entity is provided, test it. Otherwise test global heartbeat.
+                    const endpoint = entity ? `${url}/api/states/${entity}` : `${url}/api/`;
 
                     const response = await fetch(endpoint, {
                         headers: {
@@ -559,7 +560,7 @@
 
                     if (response.ok) {
                         const data = await response.json();
-                        const statusLabel = entity ? `Connecté ✓ (${data.state})` : 'Instance Connectée ✓';
+                        const statusLabel = (entity && data.state) ? `Connecté ✓ (${data.state})` : 'Instance Connectée ✓';
                         testBtn.textContent = statusLabel;
                         testBtn.style.backgroundColor = '#10b981';
                         testBtn.style.borderColor = '#10b981';
