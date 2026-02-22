@@ -122,37 +122,42 @@
                 <aside class="sidebar-right">
                     <section id="quickActionsSection" style="margin-bottom: 2rem; display: none;">
                         <h2 style="margin-bottom: 1.5rem; font-size: 1rem;">Actions Rapides</h2>
-                        <div id="quickActionsGrid"
-                            style="display: none; grid-template-columns: repeat(auto-fit, minmax(0, 1fr)); gap: 0.5rem;">
-                            <!-- Light Action -->
-                            <div class="card" id="turnOffAllBtn"
-                                style="display: none; flex-direction: row; align-items: center; justify-content: flex-start; gap: 0.5rem; cursor: pointer; min-height: 50px; padding: 0.5rem;"
-                                onclick="turnOffAll()">
-                                <div class="logo-icon"
-                                    style="background-color: #ef4444; box-shadow: 0 0 15px rgba(239, 68, 68, 0.4); width: 24px; height: 24px; min-width: 24px; display: flex; align-items: center; justify-content: center;">
-                                    <i data-lucide="power" style="color: white; width: 12px; height: 12px;"></i>
+                        <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                            <!-- Row 1: Lights -->
+                            <div id="lightActionsRow" style="display: none;">
+                                <div class="card" id="turnOffAllBtn"
+                                    style="display: flex; flex-direction: row; align-items: center; justify-content: flex-start; gap: 1rem; cursor: pointer; min-height: 60px; padding: 0.75rem;"
+                                    onclick="turnOffAll()">
+                                    <div class="logo-icon"
+                                        style="background-color: #ef4444; box-shadow: 0 0 15px rgba(239, 68, 68, 0.4); width: 28px; height: 28px; min-width: 28px; display: flex; align-items: center; justify-content: center;">
+                                        <i data-lucide="power" style="color: white; width: 14px; height: 14px;"></i>
+                                    </div>
+                                    <span style="font-weight: 600; font-size: 0.8rem;">Tout éteindre</span>
                                 </div>
-                                <span style="font-weight: 600; font-size: 0.7rem;">Tout éteindre</span>
                             </div>
 
-                            <!-- Shutter Actions -->
-                            <div class="card" id="openAllShuttersBtn"
-                                style="display: none; flex-direction: row; align-items: center; justify-content: flex-start; gap: 0.5rem; cursor: pointer; min-height: 50px; padding: 0.5rem;"
-                                onclick="controlAllShutters('open')">
-                                <div class="logo-icon"
-                                    style="background-color: var(--accent-color); box-shadow: 0 0 15px rgba(var(--accent-color-rgb), 0.4); width: 24px; height: 24px; min-width: 24px; display: flex; align-items: center; justify-content: center;">
-                                    <i data-lucide="arrow-up" style="color: white; width: 12px; height: 12px;"></i>
+                            <!-- Row 2: Shutters -->
+                            <div id="shutterActionsRow"
+                                style="display: none; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+                                <div class="card" id="openAllShuttersBtn"
+                                    style="display: flex; flex-direction: row; align-items: center; justify-content: flex-start; gap: 0.5rem; cursor: pointer; min-height: 60px; padding: 0.5rem;"
+                                    onclick="controlAllShutters('open')">
+                                    <div class="logo-icon"
+                                        style="background-color: var(--accent-color); box-shadow: 0 0 15px rgba(var(--accent-color-rgb), 0.4); width: 24px; height: 24px; min-width: 24px; display: flex; align-items: center; justify-content: center;">
+                                        <i data-lucide="arrow-up" style="color: white; width: 12px; height: 12px;"></i>
+                                    </div>
+                                    <span style="font-weight: 600; font-size: 0.75rem;">Tout ouvrir</span>
                                 </div>
-                                <span style="font-weight: 600; font-size: 0.7rem;">Tout ouvrir</span>
-                            </div>
-                            <div class="card" id="closeAllShuttersBtn"
-                                style="display: none; flex-direction: row; align-items: center; justify-content: flex-start; gap: 0.5rem; cursor: pointer; min-height: 50px; padding: 0.5rem;"
-                                onclick="controlAllShutters('close')">
-                                <div class="logo-icon"
-                                    style="background-color: #3b82f6; box-shadow: 0 0 15px rgba(59, 130, 246, 0.4); width: 24px; height: 24px; min-width: 24px; display: flex; align-items: center; justify-content: center;">
-                                    <i data-lucide="arrow-down" style="color: white; width: 12px; height: 12px;"></i>
+                                <div class="card" id="closeAllShuttersBtn"
+                                    style="display: flex; flex-direction: row; align-items: center; justify-content: flex-start; gap: 0.5rem; cursor: pointer; min-height: 60px; padding: 0.5rem;"
+                                    onclick="controlAllShutters('close')">
+                                    <div class="logo-icon"
+                                        style="background-color: #3b82f6; box-shadow: 0 0 15px rgba(59, 130, 246, 0.4); width: 24px; height: 24px; min-width: 24px; display: flex; align-items: center; justify-content: center;">
+                                        <i data-lucide="arrow-down"
+                                            style="color: white; width: 12px; height: 12px;"></i>
+                                    </div>
+                                    <span style="font-weight: 600; font-size: 0.75rem;">Tout fermer</span>
                                 </div>
-                                <span style="font-weight: 600; font-size: 0.7rem;">Tout fermer</span>
                             </div>
                         </div>
                     </section>
@@ -581,13 +586,9 @@ CREATE POLICY "Users can manage their entities" ON public.entities FOR ALL USING
                     const hasActionables = managedEntities.some(e => e.type === 'light' || e.type === 'switch');
                     const hasShutterActions = managedEntities.some(e => e.type === 'shutter');
 
-                    document.getElementById('turnOffAllBtn').style.display = hasActionables ? 'flex' : 'none';
-                    document.getElementById('openAllShuttersBtn').style.display = hasShutterActions ? 'flex' : 'none';
-                    document.getElementById('closeAllShuttersBtn').style.display = hasShutterActions ? 'flex' : 'none';
-
-                    const grid = document.getElementById('quickActionsGrid');
-                    grid.style.display = (hasActionables || hasShutterActions) ? 'grid' : 'none';
-                    quickActions.style.display = grid.style.display;
+                    document.getElementById('lightActionsRow').style.display = hasActionables ? 'block' : 'none';
+                    document.getElementById('shutterActionsRow').style.display = hasShutterActions ? 'grid' : 'none';
+                    quickActions.style.display = (hasActionables || hasShutterActions) ? 'block' : 'none';
                 }
 
                 // Aggregation for KPIs
