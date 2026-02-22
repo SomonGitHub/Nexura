@@ -522,7 +522,7 @@
                 // Save one last time to be sure
                 saveHASettings();
 
-                // Sanitize URL for the test call
+                // Sanitize URL and Token
                 const url = haUrlInput.value.trim().replace(/\/$/, "");
                 const token = haTokenInput.value.trim();
                 const entity = haEntityInput.value.trim();
@@ -541,17 +541,15 @@
                 testBtn.style.backgroundColor = 'var(--accent-color)';
 
                 try {
-                    // Timeout-able fetch
                     const controller = new AbortController();
-                    const timeoutId = setTimeout(() => controller.abort(), 8000); // 8s timeout
+                    const timeoutId = setTimeout(() => controller.abort(), 8000);
 
-                    // If entity is provided, test it. Otherwise test global heartbeat.
                     const endpoint = entity ? `${url}/api/states/${entity}` : `${url}/api/`;
 
                     const response = await fetch(endpoint, {
+                        method: 'GET',
                         headers: {
-                            "Authorization": `Bearer ${token}`,
-                            "Content-Type": "application/json"
+                            "Authorization": `Bearer ${token}`
                         },
                         signal: controller.signal
                     });
