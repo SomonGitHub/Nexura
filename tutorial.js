@@ -9,8 +9,8 @@ const tutorialData = [
     },
     {
         icon: 'link',
-        title: 'Connexion Home Assistant',
-        desc: 'Pour commencer, vous devez lier votre instance Home Assistant ou TUYA. Préparez votre URL locale et votre jeton d\'accès.'
+        title: 'Connexion',
+        desc: 'Pour commencer, vous devez lier votre instance Home Assistant et/ou TUYA. Préparez votre URL locale et votre jeton d\'accès.'
     },
     {
         icon: 'layout',

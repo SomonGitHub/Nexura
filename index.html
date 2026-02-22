@@ -120,15 +120,15 @@
 
                 <!-- Right Sidebar Column -->
                 <aside class="sidebar-right">
-                    <section style="margin-bottom: 2rem;">
+                    <section id="quickActionsSection" style="margin-bottom: 2rem; display: none;">
                         <h2 style="margin-bottom: 1.5rem; font-size: 1rem;">Actions Rapides</h2>
                         <div style="display: flex; flex-direction: column; gap: 0.75rem;">
                             <div class="card" id="turnOffAllBtn"
                                 style="display: flex; flex-direction: row; align-items: center; justify-content: flex-start; gap: 1rem; cursor: pointer; min-height: 60px; padding: 0.75rem;"
                                 onclick="turnOffAll()">
                                 <div class="logo-icon"
-                                    style="background-color: #ef4444; box-shadow: 0 0 15px rgba(239, 68, 68, 0.4); width: 28px; height: 28px; min-width: 28px;">
-                                    <i data-lucide="power" style="color: white; width: 14px;"></i>
+                                    style="background-color: #ef4444; box-shadow: 0 0 15px rgba(239, 68, 68, 0.4); width: 28px; height: 28px; min-width: 28px; display: flex; align-items: center; justify-content: center;">
+                                    <i data-lucide="power" style="color: white; width: 14px; height: 14px;"></i>
                                 </div>
                                 <span style="font-weight: 600; font-size: 0.8rem;">Tout éteindre</span>
                             </div>
@@ -552,6 +552,13 @@ CREATE POLICY "Users can manage their entities" ON public.entities FOR ALL USING
                 document.getElementById('kpiEnergy').style.display = hasEnergy ? 'flex' : 'none';
                 document.getElementById('kpiLights').style.display = hasLights ? 'flex' : 'none';
                 document.getElementById('kpiShutters').style.display = hasShutters ? 'flex' : 'none';
+
+                // Toggle Quick Actions Section (lights or switches)
+                const quickActions = document.getElementById('quickActionsSection');
+                if (quickActions) {
+                    const hasActionables = managedEntities.some(e => e.type === 'light' || e.type === 'switch');
+                    quickActions.style.display = hasActionables ? 'block' : 'none';
+                }
 
                 // Aggregation for KPIs
                 if (hasLights) {
