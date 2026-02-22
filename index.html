@@ -558,6 +558,20 @@ CREATE POLICY "Users can manage their entities" ON public.entities FOR ALL USING
             }
         }
 
+        function getIconForRoom(name) {
+            const n = name.toLowerCase();
+            if (n.includes('salon') || n.includes('séjour') || n.includes('living')) return 'sofa';
+            if (n.includes('cuisine') || n.includes('manger')) return 'utensils';
+            if (n.includes('chambre')) return 'bed';
+            if (n.includes('bain') || n.includes('sdb') || n.includes('douche')) return 'bath';
+            if (n.includes('wc') || n.includes('toilette')) return 'pocket';
+            if (n.includes('bureau') || n.includes('travail')) return 'laptop';
+            if (n.includes('garage')) return 'car';
+            if (n.includes('jardin') || n.includes('extér') || n.includes('terrasse')) return 'tree-pine';
+            if (n.includes('entrée') || n.includes('couloir')) return 'door-open';
+            return 'home';
+        }
+
         function renderRoomCards(allStates) {
             const rooms = JSON.parse(localStorage.getItem('domotique_rooms')) || [];
             const managedEntities = JSON.parse(localStorage.getItem('domotique_entities')) || [];
@@ -588,12 +602,12 @@ CREATE POLICY "Users can manage their entities" ON public.entities FOR ALL USING
                     return s && s.state === 'on';
                 }).length;
 
-                const summary = lightsOn > 0 ? `${lightsOn} éclairage${lightsOn > 1 ? 's' : ''} ON` : `${roomEntities.length} appareil${roomEntities.length > 1 ? 's' : ''}`;
+                const icon = getIconForRoom(room.name);
 
                 return `
                     <div class="card clickable" onclick="window.location.href='room.html?id=${encodeURIComponent(room.id)}'" style="padding: 0.5rem; display: flex; flex-direction: row; align-items: center; justify-content: flex-start; gap: 0.5rem; min-height: 45px;">
                         <div style="background: rgba(255,255,255,0.05); padding: 4px; border-radius: 6px; display: flex; align-items: center; justify-content: center; min-width: 24px;">
-                            <i data-lucide="home" style="width: 12px; height: 12px; color: var(--text-secondary);"></i>
+                            <i data-lucide="${icon}" style="width: 12px; height: 12px; color: var(--text-secondary);"></i>
                         </div>
                         <div style="overflow: hidden; text-align: left;">
                             <h3 style="font-size: 0.75rem; margin: 0; white-space: nowrap; text-overflow: ellipsis; overflow: hidden;">${room.name}</h3>
