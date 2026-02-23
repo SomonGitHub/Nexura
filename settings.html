@@ -1064,7 +1064,7 @@
                     try {
                         const template = `
                             [
-                            {% set entities = states.light | list + states.switch | list + states.sensor | list + states.cover | list + states.climate | list + states.binary_sensor | list + states.camera | list %}
+                            {% set entities = states.light | list + states.switch | list + states.sensor | list + states.cover | list + states.climate | list + states.binary_sensor | list + states.camera | list + states.image | list %}
                             {% for state in entities %}
                             {
                             "entity_id": {{ state.entity_id | tojson }},
@@ -1083,6 +1083,7 @@
 
                         if (response.ok) {
                             const results = await response.json();
+                            console.log("HA Scan Results:", results);
                             scannedEntities.push(...results);
                         }
                     } catch (e) { console.error("HA Scan failed", e); }
@@ -1171,11 +1172,13 @@
                     if (e.category === 'kg' || e.category === 'cz') type = 'switch';
                     else if (e.category === 'cl') type = 'shutter';
                     else if (e.category === 'ws') type = 'sensor';
+                    else if (e.category === 'sp') type = 'camera';
                     else type = 'light';
                 } else {
                     const haDomain = e.entity_id.split('.')[0];
                     if (haDomain === 'cover') type = 'shutter';
                     else if (haDomain === 'camera') type = 'camera';
+                    else if (haDomain === 'image') type = 'camera';
                     else type = haDomain;
                 }
 
