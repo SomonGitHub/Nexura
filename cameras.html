@@ -129,6 +129,12 @@
                 grid-template-columns: 1fr;
             }
         }
+
+        /* Error state styling */
+        .camera-stream.camera-error {
+            opacity: 0.5;
+            filter: grayscale(1);
+        }
     </style>
 </head>
 
@@ -232,41 +238,32 @@
         async function updateImage(haId, imgElement) {
             if (!haUrl || !haToken) return;
             try {
-                // 1. Get fresh state to see if HA provides a signed URL (entity_picture)
-                const stateRes = await fetch(`${haUrl}/api/states/${haId}`, {
+                // Normalize URL to avoid double slashes and ensure clean path
+                const haBase = haUrl.endsWith('/') ? haUrl.slice(0, -1) : haUrl;
+                const endpoint = haId.startsWith('image.') ? 'image_proxy' : 'camera_proxy';
+
+                // 1. Primary Method: Direct proxy with Bearer token (Most stable over HTTPS/Proxies)
+                let response = await fetch(`${haBase}/api/${endpoint}/${haId}?t=${Date.now()}`, {
                     headers: { 'Authorization': `Bearer ${haToken}` }
                 });
 
-                let fetchUrl = haId.startsWith('image.') ? `${haUrl}/api/image_proxy/${haId}` : `${haUrl}/api/camera_proxy/${haId}`;
-                let useHeader = true;
+                // 2. Fallback: If primary failed with 500, try the state-signed URL (entity_picture)
+                if (!response.ok) {
+                    console.log(`[Camera] Primary fetch failed (${response.status}), trying signed URL fallback...`);
+                    const stateRes = await fetch(`${haBase}/api/states/${haId}`, {
+                        headers: { 'Authorization': `Bearer ${haToken}` }
+                    });
 
-                if (stateRes.ok) {
-                    const stateData = await stateRes.json();
-                    if (stateData.attributes && stateData.attributes.entity_picture) {
-                        fetchUrl = `${haUrl}${stateData.attributes.entity_picture}`;
-                        if (fetchUrl.includes('token=')) useHeader = false;
+                    if (stateRes.ok) {
+                        const stateData = await stateRes.json();
+                        if (stateData.attributes && stateData.attributes.entity_picture) {
+                            // Signed internal HA URLs usually fail if we add an Authorization header
+                            response = await fetch(`${haBase}${stateData.attributes.entity_picture}`);
+                        }
                     }
                 }
 
-                // 2. Initial Attempt (signed URL or direct proxy with header)
-                const finalUrl1 = fetchUrl.includes('?') ? fetchUrl : `${fetchUrl}?t=${Date.now()}`;
-                let response = await fetch(finalUrl1, {
-                    headers: useHeader ? { 'Authorization': `Bearer ${haToken}` } : {}
-                });
-
-                // 3. Fallback: Try with access_token parameter if initial fetch failed
-                if (!response.ok) {
-                    console.log(`[Camera Fallback] ${haId} failed (${response.status}), trying access_token param...`);
-                    const fallbackUrl = new URL(haId.startsWith('image.') ? `${haUrl}/api/image_proxy/${haId}` : `${haUrl}/api/camera_proxy/${haId}`);
-                    fallbackUrl.searchParams.set('access_token', haToken);
-                    fallbackUrl.searchParams.set('t', Date.now());
-
-                    response = await fetch(fallbackUrl.toString());
-                }
-
-                if (!response.ok) {
-                    throw new Error(`HA Status ${response.status}`);
-                }
+                if (!response.ok) throw new Error(`HA Status ${response.status}`);
 
                 const blob = await response.blob();
                 if (blob.size < 100) throw new Error("Image blob too small");
@@ -280,8 +277,9 @@
                 imgElement.classList.remove('camera-error');
             } catch (e) {
                 console.warn(`[Camera Debug] ${haId}:`, e.message);
+                // Don't overwrite if we already have a previous working image URL on this element
                 if (!imgElement.getAttribute('data-blob-url')) {
-                    imgElement.src = 'https://placehold.co/640x360?text=Erreur+Flux+HA';
+                    imgElement.src = 'https://placehold.co/640x360?text=Flux+Indisponible';
                     imgElement.classList.add('camera-error');
                 }
             }
