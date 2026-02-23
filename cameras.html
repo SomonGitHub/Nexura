@@ -229,6 +229,31 @@
             renderCameras();
         }
 
+        async function updateImage(haId, imgElement) {
+            if (!haUrl || !haToken) return;
+            try {
+                const response = await fetch(`${haUrl}/api/camera_proxy/${haId}?time=${Date.now()}`, {
+                    headers: {
+                        'Authorization': `Bearer ${haToken}`
+                    }
+                });
+                if (!response.ok) throw new Error('Refresh failed');
+
+                const blob = await response.blob();
+                const newUrl = URL.createObjectURL(blob);
+
+                // Cleanup old URL to prevent leaks
+                const oldUrl = imgElement.getAttribute('data-blob-url');
+                if (oldUrl) URL.revokeObjectURL(oldUrl);
+
+                imgElement.src = newUrl;
+                imgElement.setAttribute('data-blob-url', newUrl);
+            } catch (e) {
+                console.error(`Failed to refresh camera ${haId}`, e);
+                imgElement.src = 'https://placehold.co/640x360?text=Indisponible';
+            }
+        }
+
         async function renderCameras() {
             const entities = JSON.parse(localStorage.getItem('domotique_entities')) || [];
             const cameras = entities.filter(e => e.type === 'camera');
@@ -252,11 +277,9 @@
             cameras.forEach(cam => {
                 const card = document.createElement('div');
                 card.className = 'camera-card';
-                const streamUrl = `${haUrl}/api/camera_proxy/${cam.haId}?time=${Date.now()}`;
-
                 card.innerHTML = `
                     <div class="camera-stream-container" id="container-${cam.haId.replace(/\./g, '-')}" style="cursor: pointer;">
-                        <img src="${streamUrl}" class="camera-stream" id="img-${cam.haId}" alt="" onerror="this.src='https://placehold.co/640x360?text=Indisponible'">
+                        <img src="" class="camera-stream" id="img-${cam.haId}" alt="" onerror="this.src='https://placehold.co/640x360?text=Indisponible'">
                         <div style="position: absolute; top: 12px; left: 12px; background: rgba(0,0,0,0.5); padding: 4px 10px; border-radius: 6px; font-size: 0.7rem; backdrop-filter: blur(4px);">
                             ${cam.haId}
                         </div>
@@ -270,16 +293,16 @@
                     </div>
                 `;
 
-                // Safe content setting
+                const imgElement = card.querySelector('img');
                 card.querySelector('h3').textContent = cam.name;
-                card.querySelector('img').alt = cam.name;
+                imgElement.alt = cam.name;
 
-                // Safe event listener
                 card.querySelector('.camera-stream-container').addEventListener('click', () => {
                     openModal(cam.name, cam.haId);
                 });
 
                 cameraGrid.appendChild(card);
+                updateImage(cam.haId, imgElement);
             });
             lucide.createIcons();
         }
@@ -290,18 +313,27 @@
             const modalTitle = document.getElementById('modalTitle');
 
             modalTitle.innerText = name;
-            modalImg.src = `${haUrl}/api/camera_proxy/${haId}`;
             modal.style.display = 'flex';
+
+            updateImage(haId, modalImg);
 
             // Set up a refresh loop for the modal image
             window.modalRefresh = setInterval(() => {
-                modalImg.src = `${haUrl}/api/camera_proxy/${haId}?time=${Date.now()}`;
+                updateImage(haId, modalImg);
             }, 1000);
         }
 
         function closeModal() {
-            document.getElementById('cameraModal').style.display = 'none';
+            const modal = document.getElementById('cameraModal');
+            const modalImg = document.getElementById('modalStream');
+            modal.style.display = 'none';
             if (window.modalRefresh) clearInterval(window.modalRefresh);
+
+            // Clean up modal image URL
+            const url = modalImg.getAttribute('data-blob-url');
+            if (url) URL.revokeObjectURL(url);
+            modalImg.src = "";
+            modalImg.removeAttribute('data-blob-url');
         }
 
         document.addEventListener('DOMContentLoaded', () => {
@@ -320,20 +352,24 @@
                 lucide.createIcons();
             });
 
-            // Global refresh of snapshots every 2 seconds
+            // Global refresh of snapshots every 5 seconds (gentle for browser)
             refreshInterval = setInterval(() => {
                 const images = document.querySelectorAll('.camera-stream');
                 images.forEach(img => {
                     if (img.id.startsWith('img-')) {
                         const haId = img.id.replace('img-', '');
-                        img.src = `${haUrl}/api/camera_proxy/${haId}?time=${Date.now()}`;
+                        updateImage(haId, img);
                     }
                 });
-            }, 2000);
+            }, 5000);
         });
 
         window.onbeforeunload = () => {
             if (refreshInterval) clearInterval(refreshInterval);
+            // Final cleanup of all object URLs
+            document.querySelectorAll('img[data-blob-url]').forEach(img => {
+                URL.revokeObjectURL(img.getAttribute('data-blob-url'));
+            });
         };
     </script>
 </body>
