@@ -835,7 +835,8 @@
             sensor: 'Capteur',
             switch: 'Prise / Interrupteur',
             climate: 'Climatisation',
-            binary_sensor: 'Détecteur'
+            binary_sensor: 'Détecteur',
+            camera: 'Caméra'
         };
 
         function renderEntities() {
@@ -876,6 +877,10 @@
                         <option value="presence" ${entity.variant === 'presence' ? 'selected' : ''}>Présence</option>
                         <option value="door" ${entity.variant === 'door' ? 'selected' : ''}>Porte</option>
                         <option value="window" ${entity.variant === 'window' ? 'selected' : ''}>Fenêtre</option>
+                    `;
+                } else if (entity.type === 'camera') {
+                    variantOptions += `
+                        <option value="proxy" ${entity.variant === 'proxy' || !entity.variant ? 'selected' : ''}>Snapshot (Auto)</option>
                     `;
                 }
 
@@ -1059,7 +1064,7 @@
                     try {
                         const template = `
                             [
-                            {% set entities = states.light | list + states.switch | list + states.sensor | list + states.cover | list + states.climate | list + states.binary_sensor | list %}
+                            {% set entities = states.light | list + states.switch | list + states.sensor | list + states.cover | list + states.climate | list + states.binary_sensor | list + states.camera | list %}
                             {% for state in entities %}
                             {
                             "entity_id": {{ state.entity_id | tojson }},
@@ -1169,7 +1174,9 @@
                     else type = 'light';
                 } else {
                     const haDomain = e.entity_id.split('.')[0];
-                    type = haDomain === 'cover' ? 'shutter' : haDomain;
+                    if (haDomain === 'cover') type = 'shutter';
+                    else if (haDomain === 'camera') type = 'camera';
+                    else type = haDomain;
                 }
 
                 const friendlyName = e.friendly_name || e.entity_id;
