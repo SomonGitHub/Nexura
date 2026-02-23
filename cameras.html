@@ -237,39 +237,41 @@
                     headers: { 'Authorization': `Bearer ${haToken}` }
                 });
 
-                let fetchUrl = `${haUrl}/api/camera_proxy/${haId}`;
+                let fetchUrl = haId.startsWith('image.') ? `${haUrl}/api/image_proxy/${haId}` : `${haUrl}/api/camera_proxy/${haId}`;
                 let useHeader = true;
 
                 if (stateRes.ok) {
                     const stateData = await stateRes.json();
                     if (stateData.attributes && stateData.attributes.entity_picture) {
                         fetchUrl = `${haUrl}${stateData.attributes.entity_picture}`;
-                        // If entity_picture already contains a token, HA might reject the Authorization header
-                        if (fetchUrl.includes('token=')) {
-                            useHeader = false;
-                        }
+                        if (fetchUrl.includes('token=')) useHeader = false;
                     }
                 }
 
-                // 2. Fetch the actual image data
-                // Add a simple cache buster if no token is present
-                const finalUrl = fetchUrl.includes('?') ? fetchUrl : `${fetchUrl}?t=${Date.now()}`;
-
-                const response = await fetch(finalUrl, {
+                // 2. Initial Attempt (signed URL or direct proxy with header)
+                const finalUrl1 = fetchUrl.includes('?') ? fetchUrl : `${fetchUrl}?t=${Date.now()}`;
+                let response = await fetch(finalUrl1, {
                     headers: useHeader ? { 'Authorization': `Bearer ${haToken}` } : {}
                 });
 
+                // 3. Fallback: Try with access_token parameter if initial fetch failed
                 if (!response.ok) {
-                    const errorText = await response.text();
-                    throw new Error(`HA Status ${response.status}: ${errorText.substring(0, 50)}`);
+                    console.log(`[Camera Fallback] ${haId} failed (${response.status}), trying access_token param...`);
+                    const fallbackUrl = new URL(haId.startsWith('image.') ? `${haUrl}/api/image_proxy/${haId}` : `${haUrl}/api/camera_proxy/${haId}`);
+                    fallbackUrl.searchParams.set('access_token', haToken);
+                    fallbackUrl.searchParams.set('t', Date.now());
+
+                    response = await fetch(fallbackUrl.toString());
+                }
+
+                if (!response.ok) {
+                    throw new Error(`HA Status ${response.status}`);
                 }
 
                 const blob = await response.blob();
-                if (blob.size < 100) throw new Error("Image blob too small - likely invalid");
+                if (blob.size < 100) throw new Error("Image blob too small");
 
                 const newUrl = URL.createObjectURL(blob);
-
-                // Cleanup old URL
                 const oldUrl = imgElement.getAttribute('data-blob-url');
                 if (oldUrl) URL.revokeObjectURL(oldUrl);
 
@@ -278,7 +280,6 @@
                 imgElement.classList.remove('camera-error');
             } catch (e) {
                 console.warn(`[Camera Debug] ${haId}:`, e.message);
-                // Don't overwrite with placeholder if we already have a previous working image
                 if (!imgElement.getAttribute('data-blob-url')) {
                     imgElement.src = 'https://placehold.co/640x360?text=Erreur+Flux+HA';
                     imgElement.classList.add('camera-error');
