@@ -252,24 +252,33 @@
             cameras.forEach(cam => {
                 const card = document.createElement('div');
                 card.className = 'camera-card';
-                // Using proxy endpoint for snapshots. Most HA cameras support this.
                 const streamUrl = `${haUrl}/api/camera_proxy/${cam.haId}?time=${Date.now()}`;
 
                 card.innerHTML = `
-                    <div class="camera-stream-container" onclick="openModal('${cam.name}', '${cam.haId}')">
-                        <img src="${streamUrl}" class="camera-stream" id="img-${cam.haId}" alt="${cam.name}" onerror="this.src='https://placehold.co/640x360?text=Indisponible'">
+                    <div class="camera-stream-container" id="container-${cam.haId.replace(/\./g, '-')}" style="cursor: pointer;">
+                        <img src="${streamUrl}" class="camera-stream" id="img-${cam.haId}" alt="" onerror="this.src='https://placehold.co/640x360?text=Indisponible'">
                         <div style="position: absolute; top: 12px; left: 12px; background: rgba(0,0,0,0.5); padding: 4px 10px; border-radius: 6px; font-size: 0.7rem; backdrop-filter: blur(4px);">
                             ${cam.haId}
                         </div>
                     </div>
                     <div class="camera-info">
-                        <h3 style="font-size: 0.95rem;">${cam.name}</h3>
+                        <h3 style="font-size: 0.95rem;"></h3>
                         <div class="camera-status">
                             <div class="status-dot"></div>
                             <span>LIVE</span>
                         </div>
                     </div>
                 `;
+
+                // Safe content setting
+                card.querySelector('h3').textContent = cam.name;
+                card.querySelector('img').alt = cam.name;
+
+                // Safe event listener
+                card.querySelector('.camera-stream-container').addEventListener('click', () => {
+                    openModal(cam.name, cam.haId);
+                });
+
                 cameraGrid.appendChild(card);
             });
             lucide.createIcons();
