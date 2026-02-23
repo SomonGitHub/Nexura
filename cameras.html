@@ -232,17 +232,35 @@
         async function updateImage(haId, imgElement) {
             if (!haUrl || !haToken) return;
             try {
-                const response = await fetch(`${haUrl}/api/camera_proxy/${haId}?time=${Date.now()}`, {
+                // Try to get fresh state to check for entity_picture (which has valid tokens)
+                const stateRes = await fetch(`${haUrl}/api/states/${haId}`, {
+                    headers: { 'Authorization': `Bearer ${haToken}` }
+                });
+
+                let fetchUrl = `${haUrl}/api/camera_proxy/${haId}`;
+
+                if (stateRes.ok) {
+                    const stateData = await stateRes.json();
+                    if (stateData.attributes && stateData.attributes.entity_picture) {
+                        fetchUrl = `${haUrl}${stateData.attributes.entity_picture}`;
+                    }
+                }
+
+                // Append cache buster only if we are using the fallback proxy
+                const finalUrl = fetchUrl.includes('?') ? fetchUrl : `${fetchUrl}?t=${Date.now()}`;
+
+                const response = await fetch(finalUrl, {
                     headers: {
                         'Authorization': `Bearer ${haToken}`
                     }
                 });
-                if (!response.ok) throw new Error('Refresh failed');
+
+                if (!response.ok) throw new Error(`HA Response: ${response.status}`);
 
                 const blob = await response.blob();
                 const newUrl = URL.createObjectURL(blob);
 
-                // Cleanup old URL to prevent leaks
+                // Cleanup old URL
                 const oldUrl = imgElement.getAttribute('data-blob-url');
                 if (oldUrl) URL.revokeObjectURL(oldUrl);
 
@@ -250,7 +268,10 @@
                 imgElement.setAttribute('data-blob-url', newUrl);
             } catch (e) {
                 console.error(`Failed to refresh camera ${haId}`, e);
-                imgElement.src = 'https://placehold.co/640x360?text=Indisponible';
+                // Only show placeholder if we don't have a valid image yet
+                if (!imgElement.getAttribute('data-blob-url')) {
+                    imgElement.src = 'https://placehold.co/640x360?text=Erreur+Flux+HA';
+                }
             }
         }
 
