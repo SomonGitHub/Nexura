@@ -38,6 +38,7 @@ const UI = {
             case 'sensor': return 'gauge';
             case 'energy': return 'zap';
             case 'binary_sensor': return 'circle-dot'; // Default for generic
+            case 'camera': return 'video';
             case 'battery': return 'battery';
             case 'empty': return 'square-dashed';
             default: return 'help-circle';
@@ -240,9 +241,11 @@ const UI = {
                 labels = { on: 'Fuite !', off: 'Sec' };
                 icon = 'droplet';
             }
-
             stateDisplay = stateData.state === 'on' ? labels.on : labels.off;
             if (stateData.state === 'unavailable') stateDisplay = 'Inconnu';
+        } else if (entity.type === 'camera') {
+            icon = 'video';
+            statusText = 'En direct';
         }
 
         const cardClass = `card ${isActive ? 'device-on' : ''} ${entity.type} ${isControl ? 'clickable' : ''} ${isDimmer ? 'variant-dimmer' : ''}`;
@@ -270,9 +273,16 @@ const UI = {
                     <i data-lucide="${icon}"></i>
                 </div>
                 <h3 style="font-size: 0.80rem; margin-bottom: 0;">${entity.name}</h3>
-                <p style="font-size: 0.65rem; color: var(--text-secondary); text-transform: capitalize; margin-bottom: 0.25rem;" class="state-text ${entity.type === 'sensor' || entity.type === 'binary_sensor' ? 'sensor-value' : ''}">
-                    ${stateDisplay}
-                </p>
+                ${entity.type === 'camera' ? `
+                    <div class="camera-preview-mini" style="width: 100%; aspect-ratio: 16/9; background: #000; border-radius: 8px; overflow: hidden; position: relative; cursor: pointer;" onclick="window.location.href='cameras.html'">
+                        <img src="${localStorage.getItem('haUrl')}/api/camera_proxy/${entity.haId}" style="width: 100%; height: 100%; object-fit: cover; opacity: 0.8;" onerror="this.src='https://via.placeholder.com/320x180?text=Flux+Camera+Indisponible'">
+                        <div style="position: absolute; bottom: 8px; right: 8px; background: rgba(0,0,0,0.6); padding: 2px 8px; border-radius: 4px; font-size: 0.65rem;">Direct</div>
+                    </div>
+                ` : `
+                    <p style="font-size: 0.65rem; color: var(--text-secondary); text-transform: capitalize; margin-bottom: 0.25rem;" class="state-text ${entity.type === 'sensor' || entity.type === 'binary_sensor' ? 'sensor-value' : ''}">
+                        ${stateDisplay}
+                    </p>
+                `}
                 ${this.getControlUI(entity, stateData, onAction)}
             </div>
         `;

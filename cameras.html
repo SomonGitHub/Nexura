@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="view-transition" content="same-origin">
+    <title>Nexura | Caméras</title>
+    <script src="protect.js"></script>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- SaaS Infrastructure -->
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <script src="ui.js"></script>
+    <style>
+        .camera-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 1.5rem;
+            margin-top: 1rem;
+        }
+
+        .camera-card {
+            background: var(--surface-color);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            overflow: hidden;
+            transition: transform 0.2s ease, border-color 0.2s ease;
+        }
+
+        .camera-card:hover {
+            transform: translateY(-4px);
+            border-color: var(--accent-color);
+        }
+
+        .camera-stream-container {
+            width: 100%;
+            aspect-ratio: 16/9;
+            background: #000;
+            position: relative;
+            cursor: pointer;
+        }
+
+        .camera-stream {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .camera-info {
+            padding: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .camera-status {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.75rem;
+            color: #10b981;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background: #10b981;
+            border-radius: 50%;
+            box-shadow: 0 0 10px #10b981;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.4;
+            }
+
+            100% {
+                opacity: 1;
+            }
+        }
+
+        /* Fullscreen Modal */
+        #cameraModal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            z-index: 10000;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+        }
+
+        #modalStream {
+            max-width: 90%;
+            max-height: 80vh;
+            border-radius: 12px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 2rem;
+            right: 2rem;
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: white;
+            padding: 0.75rem;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        @media (max-width: 768px) {
+            .camera-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <script>
+                if (localStorage.getItem('sidebar_collapsed') === 'true') {
+                    document.getElementById('sidebar').classList.add('collapsed');
+                }
+            </script>
+            <nav class="nav-links" style="margin-top: 1rem;">
+                <a href="index.html" class="nav-item">
+                    <i data-lucide="layout-dashboard" class="nav-icon"></i>
+                    <span class="nav-text">Dashboard</span>
+                </a>
+                <a href="categories.html" class="nav-item">
+                    <i data-lucide="layers" class="nav-icon"></i>
+                    <span class="nav-text">Catégories</span>
+                </a>
+                <a href="settings.html" class="nav-item">
+                    <i data-lucide="settings" class="nav-icon"></i>
+                    <span class="nav-text">Paramètres</span>
+                </a>
+                <a href="batteries.html" class="nav-item">
+                    <i data-lucide="battery" class="nav-icon"></i>
+                    <span class="nav-text">Batteries</span>
+                </a>
+                <a href="cameras.html" class="nav-item active">
+                    <i data-lucide="video" class="nav-icon"></i>
+                    <span class="nav-text">Caméras</span>
+                </a>
+
+                <a href="#" class="nav-item" id="navAccount" onclick="openAuthModal()">
+                    <i data-lucide="user" class="nav-icon"></i>
+                    <span class="nav-text">Mon Compte</span>
+                </a>
+            </nav>
+
+            <div style="margin-top: auto; padding: 1rem 0;">
+                <button id="toggleSidebar" class="nav-item"
+                    style="border: none; background: transparent; width: 100%; cursor: pointer;">
+                    <i data-lucide="chevron-left" class="nav-icon" id="sidebarIcon"></i>
+                    <span class="nav-text">Réduire</span>
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                <div>
+                    <h1>Surveillance Vidéo</h1>
+                    <p style="color: var(--text-secondary); margin-top: 0.25rem;">Visualisez vos caméras en direct</p>
+                </div>
+                <div style="display: flex; gap: 1rem;">
+                    <button class="filter-btn active" onclick="refreshAll()"
+                        style="display: flex; align-items: center; gap: 0.5rem;">
+                        <i data-lucide="refresh-cw" style="width: 14px;"></i> Actualiser
+                    </button>
+                </div>
+            </header>
+
+            <div id="cameraGrid" class="camera-grid">
+                <!-- Will be populated by JS -->
+                <div style="grid-column: 1/-1; text-align: center; padding: 4rem;">
+                    <div class="loader" style="margin: 0 auto 1rem;"></div>
+                    <p style="color: var(--text-secondary);">Chargement des flux...</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Fullscreen Modal -->
+    <div id="cameraModal">
+        <button class="modal-close" onclick="closeModal()">
+            <i data-lucide="x"></i>
+        </button>
+        <h2 id="modalTitle" style="margin-bottom: 1.5rem; color: white;">Camera</h2>
+        <img id="modalStream" src="" alt="Stream Fullscreen">
+        <div style="margin-top: 1.5rem; display: flex; gap: 1rem;">
+            <div class="camera-status">
+                <div class="status-dot"></div>
+                <span>Flux en direct</span>
+            </div>
+        </div>
+    </div>
+
+    <script src="nexura-auth.js"></script>
+    <script>
+        const haUrl = localStorage.getItem('haUrl');
+        const haToken = localStorage.getItem('haToken');
+        const cameraGrid = document.getElementById('cameraGrid');
+        let refreshInterval = null;
+
+        function refreshAll() {
+            renderCameras();
+        }
+
+        async function renderCameras() {
+            const entities = JSON.parse(localStorage.getItem('domotique_entities')) || [];
+            const cameras = entities.filter(e => e.type === 'camera');
+
+            if (cameras.length === 0) {
+                cameraGrid.innerHTML = `
+                    <div style="grid-column: 1/-1; text-align: center; padding: 4rem; background: rgba(255,255,255,0.02); border-radius: 20px; border: 1px dashed var(--glass-border);">
+                        <i data-lucide="video-off" style="width: 48px; height: 48px; color: var(--text-secondary); margin-bottom: 1rem;"></i>
+                        <h3 style="margin-bottom: 0.5rem;">Aucune caméra configurée</h3>
+                        <p style="color: var(--text-secondary); font-size: 0.9rem; max-width: 400px; margin: 0 auto 1.5rem;">
+                            Ajoutez des entités de type 'camera' dans les paramètres pour les voir ici.
+                        </p>
+                        <a href="settings.html" class="filter-btn active" style="display: inline-block; text-decoration: none;">Aller aux paramètres</a>
+                    </div>
+                `;
+                lucide.createIcons();
+                return;
+            }
+
+            cameraGrid.innerHTML = '';
+            cameras.forEach(cam => {
+                const card = document.createElement('div');
+                card.className = 'camera-card';
+                // Using proxy endpoint for snapshots. Most HA cameras support this.
+                const streamUrl = `${haUrl}/api/camera_proxy/${cam.haId}?time=${Date.now()}`;
+
+                card.innerHTML = `
+                    <div class="camera-stream-container" onclick="openModal('${cam.name}', '${cam.haId}')">
+                        <img src="${streamUrl}" class="camera-stream" id="img-${cam.haId}" alt="${cam.name}" onerror="this.src='https://via.placeholder.com/640x360?text=Indisponible'">
+                        <div style="position: absolute; top: 12px; left: 12px; background: rgba(0,0,0,0.5); padding: 4px 10px; border-radius: 6px; font-size: 0.7rem; backdrop-filter: blur(4px);">
+                            ${cam.haId}
+                        </div>
+                    </div>
+                    <div class="camera-info">
+                        <h3 style="font-size: 0.95rem;">${cam.name}</h3>
+                        <div class="camera-status">
+                            <div class="status-dot"></div>
+                            <span>LIVE</span>
+                        </div>
+                    </div>
+                `;
+                cameraGrid.appendChild(card);
+            });
+            lucide.createIcons();
+        }
+
+        function openModal(name, haId) {
+            const modal = document.getElementById('cameraModal');
+            const modalImg = document.getElementById('modalStream');
+            const modalTitle = document.getElementById('modalTitle');
+
+            modalTitle.innerText = name;
+            modalImg.src = `${haUrl}/api/camera_proxy/${haId}`;
+            modal.style.display = 'flex';
+
+            // Set up a refresh loop for the modal image
+            window.modalRefresh = setInterval(() => {
+                modalImg.src = `${haUrl}/api/camera_proxy/${haId}?time=${Date.now()}`;
+            }, 1000);
+        }
+
+        function closeModal() {
+            document.getElementById('cameraModal').style.display = 'none';
+            if (window.modalRefresh) clearInterval(window.modalRefresh);
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            renderCameras();
+            lucide.createIcons();
+
+            // Sidebar logic
+            const sidebar = document.getElementById('sidebar');
+            const toggleBtn = document.getElementById('toggleSidebar');
+            const sidebarIcon = document.getElementById('sidebarIcon');
+
+            toggleBtn.addEventListener('click', () => {
+                const isCollapsed = sidebar.classList.toggle('collapsed');
+                localStorage.setItem('sidebar_collapsed', isCollapsed);
+                sidebarIcon.setAttribute('data-lucide', isCollapsed ? 'chevron-right' : 'chevron-left');
+                lucide.createIcons();
+            });
+
+            // Global refresh of snapshots every 2 seconds
+            refreshInterval = setInterval(() => {
+                const images = document.querySelectorAll('.camera-stream');
+                images.forEach(img => {
+                    if (img.id.startsWith('img-')) {
+                        const haId = img.id.replace('img-', '');
+                        img.src = `${haUrl}/api/camera_proxy/${haId}?time=${Date.now()}`;
+                    }
+                });
+            }, 2000);
+        });
+
+        window.onbeforeunload = () => {
+            if (refreshInterval) clearInterval(refreshInterval);
+        };
+    </script>
+</body>
+
+</html>
