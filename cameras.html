@@ -232,32 +232,41 @@
         async function updateImage(haId, imgElement) {
             if (!haUrl || !haToken) return;
             try {
-                // Try to get fresh state to check for entity_picture (which has valid tokens)
+                // 1. Get fresh state to see if HA provides a signed URL (entity_picture)
                 const stateRes = await fetch(`${haUrl}/api/states/${haId}`, {
                     headers: { 'Authorization': `Bearer ${haToken}` }
                 });
 
                 let fetchUrl = `${haUrl}/api/camera_proxy/${haId}`;
+                let useHeader = true;
 
                 if (stateRes.ok) {
                     const stateData = await stateRes.json();
                     if (stateData.attributes && stateData.attributes.entity_picture) {
                         fetchUrl = `${haUrl}${stateData.attributes.entity_picture}`;
+                        // If entity_picture already contains a token, HA might reject the Authorization header
+                        if (fetchUrl.includes('token=')) {
+                            useHeader = false;
+                        }
                     }
                 }
 
-                // Append cache buster only if we are using the fallback proxy
+                // 2. Fetch the actual image data
+                // Add a simple cache buster if no token is present
                 const finalUrl = fetchUrl.includes('?') ? fetchUrl : `${fetchUrl}?t=${Date.now()}`;
 
                 const response = await fetch(finalUrl, {
-                    headers: {
-                        'Authorization': `Bearer ${haToken}`
-                    }
+                    headers: useHeader ? { 'Authorization': `Bearer ${haToken}` } : {}
                 });
 
-                if (!response.ok) throw new Error(`HA Response: ${response.status}`);
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`HA Status ${response.status}: ${errorText.substring(0, 50)}`);
+                }
 
                 const blob = await response.blob();
+                if (blob.size < 100) throw new Error("Image blob too small - likely invalid");
+
                 const newUrl = URL.createObjectURL(blob);
 
                 // Cleanup old URL
@@ -266,11 +275,13 @@
 
                 imgElement.src = newUrl;
                 imgElement.setAttribute('data-blob-url', newUrl);
+                imgElement.classList.remove('camera-error');
             } catch (e) {
-                console.error(`Failed to refresh camera ${haId}`, e);
-                // Only show placeholder if we don't have a valid image yet
+                console.warn(`[Camera Debug] ${haId}:`, e.message);
+                // Don't overwrite with placeholder if we already have a previous working image
                 if (!imgElement.getAttribute('data-blob-url')) {
                     imgElement.src = 'https://placehold.co/640x360?text=Erreur+Flux+HA';
+                    imgElement.classList.add('camera-error');
                 }
             }
         }
