@@ -236,6 +236,51 @@ body {
   }
 }
 
+/* Sound Toggle */
+#toggleAudio {
+  position: relative;
+  overflow: hidden;
+}
+
+#toggleAudio.active {
+  color: var(--accent-color);
+}
+
+#toggleAudio.active .nav-icon {
+  filter: drop-shadow(0 0 5px var(--accent-color));
+}
+
+#toggleAudio .audio-wave {
+  position: absolute;
+  bottom: 8px;
+  right: 12px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent-color);
+  opacity: 0;
+  pointer-events: none;
+}
+
+#toggleAudio.active .audio-wave {
+  opacity: 1;
+  animation: audio-bounce 1s infinite ease-in-out;
+}
+
+@keyframes audio-bounce {
+
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.5;
+  }
+
+  50% {
+    transform: scale(1.5);
+    opacity: 1;
+  }
+}
+
 /* Alert Pulsation */
 .alert-pulse {
   animation: pulse-glow 2s infinite ease-in-out;

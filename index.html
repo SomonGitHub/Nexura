@@ -60,6 +60,12 @@
             </nav>
 
             <div style="margin-top: auto; padding: 1rem 0;">
+                <button id="toggleAudio" class="nav-item" onclick="UI.toggleAudio()"
+                    style="border: none; background: transparent; width: 100%; cursor: pointer; margin-bottom: 0.5rem;">
+                    <i data-lucide="volume-x" class="nav-icon" id="audioIcon"></i>
+                    <span class="nav-text" id="audioText">Activer le son</span>
+                    <div class="audio-wave"></div>
+                </button>
                 <button id="toggleSidebar" class="nav-item"
                     style="border: none; background: transparent; width: 100%; cursor: pointer;">
                     <i data-lucide="chevron-left" class="nav-icon" id="sidebarIcon"></i>

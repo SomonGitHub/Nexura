@@ -444,6 +444,7 @@ const UI = {
     updateAmbiance(allStates) {
         this.updateWeather(allStates);
         this.updateOracle(allStates);
+        this.updateSoundscape(allStates);
     },
 
     updateWeather(allStates) {
@@ -570,6 +571,114 @@ const UI = {
         } else if (!oracle.classList.contains('visible')) {
             oracle.classList.add('visible');
         }
+    },
+
+    // Audio Engine for Biorythmic Soundscape
+    _audio: {
+        enabled: false,
+        ambientTrack: null, // Dawn, Day, Dusk, Night
+        weatherTrack: null, // Rain
+        currentAmbientUrl: '',
+        sources: {
+            dawn: 'https://cdn.pixabay.com/download/audio/2021/09/06/audio_24ef6e8850.mp3?filename=forest-birds-6617.mp3',
+            day: 'https://cdn.pixabay.com/download/audio/2022/03/24/audio_349d4f1347.mp3?filename=gentle-ocean-waves-birdcall-7484.mp3',
+            dusk: 'https://cdn.pixabay.com/download/audio/2022/01/18/audio_651f8939c0.mp3?filename=crickets-chirping-at-night-7813.mp3',
+            night: 'https://cdn.pixabay.com/download/audio/2022/01/18/audio_d0a13f69d2.mp3?filename=deep-ambient-texture-7812.mp3',
+            rain: 'https://cdn.pixabay.com/download/audio/2022/03/04/audio_9c08d98d83.mp3?filename=soft-rain-ambient-7143.mp3'
+        }
+    },
+
+    toggleAudio() {
+        this._audio.enabled = !this._audio.enabled;
+        const btn = document.getElementById('toggleAudio');
+        const icon = document.getElementById('audioIcon');
+        const text = document.getElementById('audioText');
+
+        if (this._audio.enabled) {
+            btn.classList.add('active');
+            icon.setAttribute('data-lucide', 'volume-2');
+            text.textContent = "Son Activé";
+            this.updateSoundscape(); // Start immediately
+        } else {
+            btn.classList.remove('active');
+            icon.setAttribute('data-lucide', 'volume-x');
+            text.textContent = "Activer le son";
+            this._stopAllAudio();
+        }
+        lucide.createIcons();
+    },
+
+    _stopAllAudio() {
+        if (this._audio.ambientTrack) this._fadeAndStop(this._audio.ambientTrack);
+        if (this._audio.weatherTrack) this._fadeAndStop(this._audio.weatherTrack);
+        this._audio.currentAmbientUrl = '';
+    },
+
+    _fadeAndStop(audio) {
+        let vol = audio.volume;
+        const interval = setInterval(() => {
+            if (vol > 0.05) {
+                vol -= 0.05;
+                audio.volume = vol;
+            } else {
+                audio.pause();
+                audio.volume = 0;
+                clearInterval(interval);
+            }
+        }, 100);
+    },
+
+    updateSoundscape(allStates) {
+        if (!this._audio.enabled) return;
+
+        const hour = new Date().getHours();
+        let targetAmbient = '';
+
+        if (hour >= 5 && hour < 9) targetAmbient = 'dawn';
+        else if (hour >= 9 && hour < 18) targetAmbient = 'day';
+        else if (hour >= 18 && hour < 22) targetAmbient = 'dusk';
+        else targetAmbient = 'night';
+
+        const url = this._audio.sources[targetAmbient];
+
+        // 1. Handle Ambient Track
+        if (this._audio.currentAmbientUrl !== url) {
+            if (this._audio.ambientTrack) this._fadeAndStop(this._audio.ambientTrack);
+
+            this._audio.ambientTrack = new Audio(url);
+            this._audio.ambientTrack.loop = true;
+            this._audio.ambientTrack.volume = 0;
+            this._audio.ambientTrack.play().catch(e => console.log("Audio play blocked", e));
+            this._fadeIn(this._audio.ambientTrack, targetAmbient === 'night' ? 0.05 : 0.1);
+            this._audio.currentAmbientUrl = url;
+        }
+
+        // 2. Handle Weather Track (Rain)
+        const weather = allStates?.find(s => s.entity_id.startsWith('weather.'));
+        const isRainy = weather && (weather.state === 'rainy' || weather.state === 'pouring');
+
+        if (isRainy && !this._audio.weatherTrack) {
+            this._audio.weatherTrack = new Audio(this._audio.sources.rain);
+            this._audio.weatherTrack.loop = true;
+            this._audio.weatherTrack.volume = 0;
+            this._audio.weatherTrack.play().catch(e => { });
+            this._fadeIn(this._audio.weatherTrack, 0.1);
+        } else if (!isRainy && this._audio.weatherTrack) {
+            this._fadeAndStop(this._audio.weatherTrack);
+            this._audio.weatherTrack = null;
+        }
+    },
+
+    _fadeIn(audio, targetVol) {
+        let vol = 0;
+        const interval = setInterval(() => {
+            if (vol < targetVol) {
+                vol += 0.01;
+                audio.volume = Math.min(vol, targetVol);
+            } else {
+                clearInterval(interval);
+            }
+        }, 200);
     }
 };
 
