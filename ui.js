@@ -301,9 +301,11 @@ const UI = {
                         <div style="position: absolute; bottom: 8px; right: 8px; background: rgba(0,0,0,0.6); padding: 2px 8px; border-radius: 4px; font-size: 0.65rem;">Direct</div>
                     </div>
                 ` : `
+                    ${!isTemperature ? `
                     <p style="font-size: 0.65rem; color: var(--text-secondary); text-transform: capitalize; margin-bottom: 0.25rem;" class="state-text ${entity.type === 'sensor' || entity.type === 'binary_sensor' ? 'sensor-value' : ''}">
                         ${stateDisplay}
                     </p>
+                    ` : ''}
                 `}
                 ${this.getControlUI(entity, stateData, onAction)}
             </div>
