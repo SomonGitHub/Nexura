@@ -66,10 +66,9 @@ const UI = {
         if (humidity === null || humidity === undefined || isNaN(humidity)) return 'var(--text-secondary)';
         const h = parseFloat(humidity);
 
-        // Range 20% (Dry) -> 80% (Humid)
-        // Light Cyan (180deg) -> Deep Blue (210deg)
-        let hue = 180 + (h - 20) * 0.5;
-        hue = Math.max(180, Math.min(220, hue));
+        // Gradient: Light Blue (200deg) at 20% -> Red (0deg) at 80%
+        let hue = 200 - (h - 20) * (200 / 60);
+        hue = Math.max(0, Math.min(200, hue));
 
         return `hsl(${hue}, 80%, 60%)`;
     },
