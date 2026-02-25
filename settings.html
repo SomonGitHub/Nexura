@@ -1015,6 +1015,10 @@
                 <p>${entity.haId}</p>
             </div>
             <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <select class="type-selector" onchange="updateEntityType('${entity.haId}', this.value)"
+                    style="font-size: 0.75rem; padding: 0.25rem;">
+                    ${Object.entries(typeLabels).map(([val, lbl]) => `<option value="${val}" ${val === entity.type ? 'selected' : ''}>${lbl}</option>`).join('')}
+                </select>
                 <select class="variant-selector" onchange="updateVariant('${entity.haId}', this.value)"
                     style="font-size: 0.75rem; padding: 0.25rem;">
                     ${variantOptions}
@@ -1035,6 +1039,13 @@
             });
             lucide.createIcons();
         }
+
+        window.updateEntityType = function (haId, newType) {
+            entities = entities.map(e => e.haId === haId ? { ...e, type: newType } : e);
+            localStorage.setItem('domotique_entities', JSON.stringify(entities));
+            renderEntities();
+            if (window.syncToCloud) window.syncToCloud();
+        };
 
         window.assignRoom = function (haId, roomId) {
             entities = entities.map(e => e.haId === haId ? { ...e, roomId: roomId || null } : e);
