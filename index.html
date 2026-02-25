@@ -22,6 +22,7 @@
 </head>
 
 <body>
+    <div id="ambiance-layer"></div>
     <div class="app-container">
         <!-- Sidebar -->
         <aside class="sidebar" id="sidebar">
@@ -626,6 +627,8 @@ CREATE POLICY "Users can manage their entities" ON public.entities FOR ALL USING
                     onClick: "handleCardClick(event, '${haId}', ${isActive_bool})",
                     emptyMessage: 'Aucun contrôle ajouté. Cliquez sur "+" pour commencer.'
                 });
+
+                UI.updateAmbiance(allStates);
 
                 // Render Room Cards
                 renderRoomCards(allStates);

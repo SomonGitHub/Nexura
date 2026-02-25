@@ -157,13 +157,20 @@ const UI = {
                 toggle.setAttribute('onclick', `event.stopPropagation(); ${onAction}('${domain}', '${isActive ? 'turn_off' : 'turn_on'}', '${entity.haId}')`);
             }
 
-            const slider = card.querySelector('input[type="range"]');
             if (slider && stateData.attributes && stateData.attributes.brightness !== undefined) {
                 const brightnessPct = Math.round((stateData.attributes.brightness / 255) * 100);
                 if (parseInt(slider.value) !== brightnessPct) {
                     slider.value = brightnessPct;
                 }
             }
+
+            // 4. Update Alert Pulsations
+            const isCritical = (entity.type === 'sensor' && stateData.attributes?.device_class === 'moisture' && stateData.state === 'on') ||
+                (entity.type === 'humidity' && parseFloat(stateData.state) > 80);
+            const isWarning = (entity.type === 'binary_sensor' && (stateData.attributes?.device_class === 'door' || stateData.attributes?.device_class === 'window') && stateData.state === 'on');
+
+            card.classList.toggle('alert-pulse', isCritical);
+            card.classList.toggle('warning-pulse', isWarning);
         });
 
         this.logMemory(`Update ${containerId}`);
@@ -412,11 +419,70 @@ const UI = {
                 });
             }
         });
+    },
+
+    initAmbiance() {
+        const layer = document.getElementById('ambiance-layer');
+        if (!layer) return;
+
+        this.updateSky();
+        setInterval(() => this.updateSky(), 60000); // Every minute
+    },
+
+    updateSky() {
+        const layer = document.getElementById('ambiance-layer');
+        if (!layer) return;
+
+        const hour = new Date().getHours();
+        let skyClass = 'sky-night';
+
+        if (hour >= 6 && hour < 9) skyClass = 'sky-dawn';
+        else if (hour >= 9 && hour < 17) skyClass = 'sky-day';
+        else if (hour >= 17 && hour < 21) skyClass = 'sky-dusk';
+
+        layer.className = skyClass;
+    },
+
+    updateAmbiance(allStates) {
+        this.updateWeather(allStates);
+    },
+
+    updateWeather(allStates) {
+        const layer = document.getElementById('ambiance-layer');
+        if (!layer) return;
+
+        const weatherEntity = allStates.find(s => s.entity_id.startsWith('weather.'));
+        const isRainy = weatherEntity && (weatherEntity.state === 'rainy' || weatherEntity.state === 'pouring');
+
+        let rainContainer = layer.querySelector('.rain-container');
+
+        if (isRainy) {
+            if (!rainContainer) {
+                rainContainer = document.createElement('div');
+                rainContainer.className = 'rain-container';
+                layer.appendChild(rainContainer);
+
+                // Create drops
+                for (let i = 0; i < 50; i++) {
+                    const drop = document.createElement('div');
+                    drop.className = 'rain-drop';
+                    drop.style.left = Math.random() * 100 + '%';
+                    drop.style.animationDuration = (Math.random() * 0.5 + 0.5) + 's';
+                    drop.style.animationDelay = Math.random() * 2 + 's';
+                    rainContainer.appendChild(drop);
+                }
+            }
+        } else if (rainContainer) {
+            rainContainer.remove();
+        }
     }
 };
 
 
-document.addEventListener('DOMContentLoaded', () => UI.initPageTransitions());
+document.addEventListener('DOMContentLoaded', () => {
+    UI.initPageTransitions();
+    UI.initAmbiance();
+});
 
 
 window.UI = UI;
