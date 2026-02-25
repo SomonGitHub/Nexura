@@ -677,16 +677,24 @@ CREATE POLICY "Users can manage their entities" ON public.entities FOR ALL USING
             // Room cards are less frequent/numerous, so simple refresh icon is enough
             const newHtml = roomsToShow.map(room => {
                 const roomEntities = managedEntities.filter(e => e.roomId === room.id || (room.id === 'unassigned' && !e.roomId));
+
+                let roomAlertClass = '';
                 const lightsOn = roomEntities.filter(e => {
+                    const s = allStates.find(st => st.entity_id === e.haId) || { state: 'unavailable' };
+
+                    // Check for alerts while iterating
+                    const alerts = UI.getAlertClasses(e, s);
+                    if (alerts.includes('alert-pulse')) roomAlertClass = 'alert-pulse';
+                    else if (alerts.includes('warning-pulse') && roomAlertClass !== 'alert-pulse') roomAlertClass = 'warning-pulse';
+
                     if (e.type !== 'light') return false;
-                    const s = allStates.find(st => st.entity_id === e.haId);
                     return s && s.state === 'on';
                 }).length;
 
                 const icon = getIconForRoom(room.name);
 
                 return `
-                    <div class="card clickable" onclick="window.location.href='room.html?id=${encodeURIComponent(room.id)}'" style="padding: 0.5rem; display: flex; flex-direction: row; align-items: center; justify-content: flex-start; gap: 0.5rem; min-height: 45px;">
+                    <div class="card clickable ${roomAlertClass}" onclick="window.location.href='room.html?id=${encodeURIComponent(room.id)}'" style="padding: 0.5rem; display: flex; flex-direction: row; align-items: center; justify-content: flex-start; gap: 0.5rem; min-height: 45px;">
                         <div style="background: rgba(255,255,255,0.05); padding: 4px; border-radius: 6px; display: flex; align-items: center; justify-content: center; min-width: 24px;">
                             <i data-lucide="${icon}" style="width: 12px; height: 12px; color: var(--text-secondary);"></i>
                         </div>
