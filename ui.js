@@ -44,7 +44,20 @@ const UI = {
             default: return 'help-circle';
         }
     },
+    /**
+     * Get CSS color based on temperature value (Blue -> Green -> Red)
+     */
+    getTemperatureColor(temp) {
+        if (temp === null || temp === undefined || isNaN(temp)) return 'var(--text-secondary)';
+        const t = parseFloat(temp);
 
+        // Smooth HSL Gradient: Blue (240deg) at 10°C -> Red (0deg) at 30°C
+        // Range 10-30 = 20 degrees. 240 / 20 = 12 deg per °C
+        let hue = 240 - (t - 10) * 12;
+        hue = Math.max(0, Math.min(240, hue)); // Clamp between 0 and 240
+
+        return `hsl(${hue}, 70%, 50%)`;
+    },
 
     refreshIcons(selectorOrElement) {
         if (window.lucide) {
@@ -218,6 +231,12 @@ const UI = {
         let stateDisplay = `${stateData.state}${stateData.attributes?.unit_of_measurement ? ' ' + stateData.attributes.unit_of_measurement : ''}`;
         let icon = this.getIconForType(entity.type);
 
+        // Specific logic for Temperature Sensors
+        const isTemperature = entity.type === 'sensor' && (stateData.attributes?.unit_of_measurement === '°C' || stateData.attributes?.unit_of_measurement === '°F' || stateData.attributes?.device_class === 'temperature');
+        if (isTemperature) {
+            icon = 'thermometer';
+        }
+
 
         if (entity.type === 'binary_sensor') {
             const devClass = stateData?.attributes?.device_class;
@@ -273,7 +292,10 @@ const UI = {
                     <i data-lucide="${icon}"></i>
                 </div>
                 <h3 style="font-size: 0.80rem; margin-bottom: 0;">${entity.name}</h3>
-                ${entity.type === 'camera' ? `
+            <div class="state-display" style="font-size: 1.1rem; font-weight: 700; margin-top: 0.2rem; color: ${isTemperature ? this.getTemperatureColor(stateData.state) : 'inherit'};">
+                ${stateDisplay}
+            </div>
+            ${entity.type === 'camera' ? `
                     <div class="camera-preview-mini" style="width: 100%; aspect-ratio: 16/9; background: #000; border-radius: 8px; overflow: hidden; position: relative; cursor: pointer;" onclick="window.location.href='cameras.html'">
                         <img src="${localStorage.getItem('haUrl')}/api/camera_proxy/${entity.haId}" style="width: 100%; height: 100%; object-fit: cover; opacity: 0.8;" onerror="this.src='https://via.placeholder.com/320x180?text=Flux+Camera+Indisponible'">
                         <div style="position: absolute; bottom: 8px; right: 8px; background: rgba(0,0,0,0.6); padding: 2px 8px; border-radius: 4px; font-size: 0.65rem;">Direct</div>
