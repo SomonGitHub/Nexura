@@ -581,9 +581,9 @@ const UI = {
         currentAmbientUrl: '',
         sources: {
             dawn: 'https://cdn.pixabay.com/download/audio/2021/09/06/audio_24ef6e8850.mp3?filename=forest-birds-6617.mp3',
-            day: 'https://cdn.pixabay.com/download/audio/2022/03/24/audio_349d4f1347.mp3?filename=gentle-ocean-waves-birdcall-7484.mp3',
+            day: 'https://cdn.pixabay.com/download/audio/2022/11/04/audio_92425026ff.mp3?filename=forest-ambient-sounds-124619.mp3',
             dusk: 'https://cdn.pixabay.com/download/audio/2022/01/18/audio_651f8939c0.mp3?filename=crickets-chirping-at-night-7813.mp3',
-            night: 'https://cdn.pixabay.com/download/audio/2022/01/18/audio_d0a13f69d2.mp3?filename=deep-ambient-texture-7812.mp3',
+            night: 'https://cdn.pixabay.com/download/audio/2022/10/25/audio_51795c6436.mp3?filename=light-wind-blowing-125032.mp3',
             rain: 'https://cdn.pixabay.com/download/audio/2022/03/04/audio_9c08d98d83.mp3?filename=soft-rain-ambient-7143.mp3'
         }
     },
