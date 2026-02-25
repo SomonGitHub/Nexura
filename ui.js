@@ -59,6 +59,21 @@ const UI = {
         return `hsl(${hue}, 70%, 50%)`;
     },
 
+    /**
+     * Get CSS color based on humidity value (Light Blue -> Deep Cyan)
+     */
+    getHumidityColor(humidity) {
+        if (humidity === null || humidity === undefined || isNaN(humidity)) return 'var(--text-secondary)';
+        const h = parseFloat(humidity);
+
+        // Range 20% (Dry) -> 80% (Humid)
+        // Light Cyan (180deg) -> Deep Blue (210deg)
+        let hue = 180 + (h - 20) * 0.5;
+        hue = Math.max(180, Math.min(220, hue));
+
+        return `hsl(${hue}, 80%, 60%)`;
+    },
+
     refreshIcons(selectorOrElement) {
         if (window.lucide) {
             const options = {};
@@ -231,10 +246,14 @@ const UI = {
         let stateDisplay = `${stateData.state}${stateData.attributes?.unit_of_measurement ? ' ' + stateData.attributes.unit_of_measurement : ''}`;
         let icon = this.getIconForType(entity.type);
 
-        // Specific logic for Temperature Sensors
+        // Specific logic for Sensors (Temperature & Humidity)
         const isTemperature = entity.type === 'sensor' && (stateData.attributes?.unit_of_measurement === '°C' || stateData.attributes?.unit_of_measurement === '°F' || stateData.attributes?.device_class === 'temperature');
+        const isHumidity = entity.type === 'sensor' && (stateData.attributes?.unit_of_measurement === '%' || stateData.attributes?.device_class === 'humidity');
+
         if (isTemperature) {
             icon = 'thermometer';
+        } else if (isHumidity) {
+            icon = 'droplet';
         }
 
 
@@ -294,7 +313,7 @@ const UI = {
             <h3 style="font-size: 0.80rem; margin-bottom: 0.2rem;">${entity.name}</h3>
             
             ${(entity.type === 'sensor' || entity.type === 'binary_sensor') ? `
-                <div class="state-display" style="font-size: 1.1rem; font-weight: 700; color: ${isTemperature ? this.getTemperatureColor(stateData.state) : 'inherit'};">
+                <div class="state-display" style="font-size: 1.1rem; font-weight: 700; color: ${isTemperature ? this.getTemperatureColor(stateData.state) : (isHumidity ? this.getHumidityColor(stateData.state) : 'inherit')};">
                     ${stateDisplay}
                 </div>
             ` : ''}
