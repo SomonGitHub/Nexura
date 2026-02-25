@@ -36,6 +36,8 @@ const UI = {
             case 'switch': return 'plug';
             case 'climate': return 'thermometer';
             case 'sensor': return 'gauge';
+            case 'temperature': return 'thermometer';
+            case 'humidity': return 'droplet';
             case 'energy': return 'zap';
             case 'binary_sensor': return 'circle-dot'; // Default for generic
             case 'camera': return 'video';
@@ -246,8 +248,8 @@ const UI = {
         let icon = this.getIconForType(entity.type);
 
         // Specific logic for Sensors (Temperature & Humidity)
-        const isTemperature = entity.type === 'sensor' && (stateData.attributes?.unit_of_measurement === '°C' || stateData.attributes?.unit_of_measurement === '°F' || stateData.attributes?.device_class === 'temperature');
-        const isHumidity = entity.type === 'sensor' && (stateData.attributes?.unit_of_measurement === '%' || stateData.attributes?.device_class === 'humidity');
+        const isTemperature = (entity.type === 'temperature') || (entity.type === 'sensor' && (stateData.attributes?.unit_of_measurement === '°C' || stateData.attributes?.unit_of_measurement === '°F' || stateData.attributes?.device_class === 'temperature'));
+        const isHumidity = (entity.type === 'humidity') || (entity.type === 'sensor' && (stateData.attributes?.unit_of_measurement === '%' || stateData.attributes?.device_class === 'humidity'));
 
         if (isTemperature) {
             icon = 'thermometer';
@@ -311,7 +313,7 @@ const UI = {
             </div>
             <h3 style="font-size: 0.80rem; margin-bottom: 0.2rem;">${entity.name}</h3>
             
-            ${(entity.type === 'sensor' || entity.type === 'binary_sensor') ? `
+            ${(entity.type === 'sensor' || entity.type === 'binary_sensor' || entity.type === 'temperature' || entity.type === 'humidity') ? `
                 <div class="state-display" style="font-size: 1.1rem; font-weight: 700; color: ${isTemperature ? this.getTemperatureColor(stateData.state) : (isHumidity ? this.getHumidityColor(stateData.state) : 'inherit')};">
                     ${stateDisplay}
                 </div>
