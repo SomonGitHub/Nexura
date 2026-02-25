@@ -84,25 +84,30 @@ export async function onRequestPost(context) {
             ).run();
         }
         else if (type === 'rooms') {
-            // Transactional update for rooms
-            const statements = data.map(room => env.DB.prepare(`
-                INSERT INTO rooms (id, user_id, name) VALUES (?, ?, ?)
-                ON CONFLICT(id, user_id) DO UPDATE SET name = EXCLUDED.name
-            `).bind(room.id, userId, room.name));
+            // Clear existing rooms for this user
+            await env.DB.prepare("DELETE FROM rooms WHERE user_id = ?").bind(userId).run();
 
-            await env.DB.batch(statements);
+            if (data.length > 0) {
+                // Batch insert updated rooms
+                const statements = data.map(room => env.DB.prepare(`
+                    INSERT INTO rooms (id, user_id, name) VALUES (?, ?, ?)
+                `).bind(room.id, userId, room.name));
+
+                await env.DB.batch(statements);
+            }
         }
         else if (type === 'entities') {
-            const statements = data.map(e => env.DB.prepare(`
-                INSERT INTO entities (haid, user_id, name, type, variant, roomid) VALUES (?, ?, ?, ?, ?, ?)
-                ON CONFLICT(haid, user_id) DO UPDATE SET
-                name = EXCLUDED.name,
-                type = EXCLUDED.type,
-                variant = EXCLUDED.variant,
-                roomid = EXCLUDED.roomid
-            `).bind(e.haId, userId, e.name, e.type, e.variant || null, e.roomId || null));
+            // Clear existing entities for this user
+            await env.DB.prepare("DELETE FROM entities WHERE user_id = ?").bind(userId).run();
 
-            await env.DB.batch(statements);
+            if (data.length > 0) {
+                // Batch insert updated entities
+                const statements = data.map(e => env.DB.prepare(`
+                    INSERT INTO entities (haid, user_id, name, type, variant, roomid) VALUES (?, ?, ?, ?, ?, ?)
+                `).bind(e.haId, userId, e.name, e.type, e.variant || null, e.roomId || null));
+
+                await env.DB.batch(statements);
+            }
         }
 
         return new Response(JSON.stringify({ success: true }), {

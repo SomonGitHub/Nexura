@@ -245,7 +245,7 @@ async function callNexuraApi(method, body = null) {
     if (body) options.body = JSON.stringify({ userId: currentSession.user.id, ...body });
 
     const response = await fetch(url, options);
-    if (!response.ok) { let errMsg = response.statusText; try { const errData = await response.json(); if (errData && errData.error) errMsg = errData.error; } catch(e) {} throw new Error(`API Error: ${errMsg}`); }
+    if (!response.ok) { let errMsg = response.statusText; try { const errData = await response.json(); if (errData && errData.error) errMsg = errData.error; } catch (e) { } throw new Error(`API Error: ${errMsg}`); }
     return await response.json();
 }
 
@@ -254,14 +254,10 @@ async function syncToCloud() {
 
     try {
         const rooms = JSON.parse(localStorage.getItem('domotique_rooms')) || [];
-        if (rooms.length > 0) {
-            await callNexuraApi('POST', { type: 'rooms', data: rooms });
-        }
+        await callNexuraApi('POST', { type: 'rooms', data: rooms });
 
         const entities = JSON.parse(localStorage.getItem('domotique_entities')) || [];
-        if (entities.length > 0) {
-            await callNexuraApi('POST', { type: 'entities', data: entities });
-        }
+        await callNexuraApi('POST', { type: 'entities', data: entities });
 
         const dashboardCards = JSON.parse(localStorage.getItem('dashboard_cards')) || [];
         const haUrl = localStorage.getItem('haUrl');
