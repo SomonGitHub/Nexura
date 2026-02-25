@@ -310,7 +310,13 @@
                 <div id="ha-tab" class="tab-pane active">
                     <div class="setting-item">
                         <div class="setting-info">
-                            <h3>URL de l'instance</h3>
+                            <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem;">
+                                <h3>URL de l'instance</h3>
+                                <button onclick="openHAHelpModal()"
+                                    style="background:none; border:none; padding:0; cursor:pointer; color:var(--accent-color); display:flex; align-items:center;">
+                                    <i data-lucide="help-circle" style="width: 14px; height: 14px;"></i>
+                                </button>
+                            </div>
                             <p>Ex: http://192.168.1.100:8123</p>
                         </div>
                         <input type="text" id="haUrl" placeholder="http://homeassistant.local:8123">
@@ -684,12 +690,18 @@
                     const controller = new AbortController();
                     const timeoutId = setTimeout(() => controller.abort(), 8000);
 
-                    const endpoint = entity ? `${url}/api/states/${entity}` : `${url}/api/`;
+                    // Pre-check for Mixed Content if Nexura is HTTPS
+                    if (window.location.protocol === 'https:' && url.startsWith('http:')) {
+                        console.warn("Potential Mixed Content issue detected");
+                    }
+
+                    const endpoint = entity ? `${url}/api/states/${entity}` : `${url}/api/config`;
 
                     const response = await fetch(endpoint, {
                         method: 'GET',
                         headers: {
-                            "Authorization": `Bearer ${token}`
+                            "Authorization": `Bearer ${token}`,
+                            "Content-Type": "application/json"
                         },
                         signal: controller.signal
                     });
@@ -709,14 +721,31 @@
                             window.syncToCloud();
                         }
                     } else {
-                        const errorMsg = response.status === 401 ? 'Jeton invalide' : `Erreur ${response.status}`;
+                        let errorMsg = `Erreur ${response.status}`;
+                        if (response.status === 401) errorMsg = 'Clé API/Jeton invalide';
+                        if (response.status === 403) errorMsg = 'CORS ou Accès refusé';
+                        if (response.status === 404) errorMsg = 'Instance introuvable (404)';
+
                         testBtn.textContent = errorMsg;
                         testBtn.style.backgroundColor = '#ef4444';
                         testBtn.style.borderColor = '#ef4444';
                     }
                 } catch (err) {
-                    console.error("Connection failed:", err);
-                    testBtn.textContent = err.name === 'AbortError' ? 'Délai d\'attente dépassé' : 'Échec (CORS / Réseau)';
+                    console.error("Connection failed details:", err);
+                    let finalError = 'Échec de connexion';
+
+                    if (err.name === 'AbortError') {
+                        finalError = 'Timeout (Réseau local ?)';
+                    } else if (err.message.includes('fetch') || err instanceof TypeError) {
+                        // Often caused by CORS or Mixed Content (HTTPS -> HTTP)
+                        if (window.location.protocol === 'https:' && url.startsWith('http:')) {
+                            finalError = 'Bloqué : HTTPS vs HTTP';
+                        } else {
+                            finalError = 'CORS / Réseau bloqué';
+                        }
+                    }
+
+                    testBtn.textContent = finalError;
                     testBtn.style.backgroundColor = '#ef4444';
                     testBtn.style.borderColor = '#ef4444';
                 }
@@ -1259,7 +1288,61 @@
             if (window.syncToCloud) window.syncToCloud();
             scannerModal.style.display = 'none';
         });
+
+        // --- HA Help Modal ---
+        function openHAHelpModal() {
+            document.getElementById('haHelpModal').style.display = 'flex';
+        }
+
+        function closeHAHelpModal() {
+            document.getElementById('haHelpModal').style.display = 'none';
+        }
     </script>
+
+    <!-- HA Help Modal -->
+    <div class="modal-overlay" id="haHelpModal">
+        <div class="modal-content" style="max-width: 550px;">
+            <div class="modal-header">
+                <h2 style="font-size: 1.2rem; margin: 0;">Aide : Adresse Home Assistant</h2>
+                <button onclick="closeHAHelpModal()"
+                    style="background: none; border: none; color: var(--text-secondary); cursor: pointer;">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+            <div class="modal-body" style="line-height: 1.6; font-size: 0.9rem;">
+                <div
+                    style="background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.2); border-radius: 8px; padding: 1rem; margin-bottom: 1.5rem; color: #f59e0b;">
+                    <div style="display: flex; gap: 0.75rem; align-items: flex-start;">
+                        <i data-lucide="alert-triangle" style="width: 20px; flex-shrink: 0;"></i>
+                        <p style="margin: 0;">L'utilisation d'une adresse locale (<code>http://192.168.x.x</code>)
+                            présente des défis techniques majeurs.</p>
+                    </div>
+                </div>
+
+                <h4 style="color: var(--accent-color); margin-bottom: 0.5rem;">1. Problème de Contenu Mixte (HTTPS)</h4>
+                <p>Nexura est sécurisé via HTTPS. Votre navigateur <b>bloquera</b> toute connexion vers une adresse non
+                    sécurisée (HTTP).
+                    Il est recommandé d'utiliser une URL HTTPS (via DuckDNS, Nabu Casa ou Cloudflare Tunnel).</p>
+
+                <h4 style="color: var(--accent-color); margin: 1rem 0 0.5rem;">2. Configuration du CORS</h4>
+                <p>Home Assistant bloque les requêtes externes par sécurité. Vous devez autoriser Nexura dans votre
+                    <code>configuration.yaml</code> :
+                </p>
+                <pre
+                    style="background: rgba(0,0,0,0.3); padding: 0.75rem; border-radius: 8px; font-size: 0.8rem; margin: 0.5rem 0;">http:
+  cors_allowed_origins:
+    - https://nexura.pages.dev</pre>
+
+                <h4 style="color: var(--accent-color); margin: 1rem 0 0.5rem;">3. Réseau Local</h4>
+                <p>Si vous utilisez une adresse IP locale, votre appareil (tablette, smartphone) doit impérativement
+                    être connecté au même réseau WiFi que Home Assistant.</p>
+            </div>
+            <div class="modal-footer">
+                <button class="filter-btn active" onclick="closeHAHelpModal()">Compris</button>
+            </div>
+        </div>
+    </div>
+
     <script src="nexura-auth.js"></script>
 </body>
 
