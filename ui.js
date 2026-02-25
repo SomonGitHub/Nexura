@@ -165,12 +165,9 @@ const UI = {
             }
 
             // 4. Update Alert Pulsations
-            const isCritical = (entity.type === 'sensor' && stateData.attributes?.device_class === 'moisture' && stateData.state === 'on') ||
-                (entity.type === 'humidity' && parseFloat(stateData.state) > 70);
-            const isWarning = (entity.type === 'binary_sensor' && (stateData.attributes?.device_class === 'door' || stateData.attributes?.device_class === 'window') && stateData.state === 'on');
-
-            card.classList.toggle('alert-pulse', isCritical);
-            card.classList.toggle('warning-pulse', isWarning);
+            const alertClasses = this.getAlertClasses(entity, stateData);
+            card.classList.toggle('alert-pulse', alertClasses.includes('alert-pulse'));
+            card.classList.toggle('warning-pulse', alertClasses.includes('warning-pulse'));
         });
 
         this.logMemory(`Update ${containerId}`);
@@ -294,7 +291,8 @@ const UI = {
             statusText = 'En direct';
         }
 
-        const cardClass = `card ${isActive ? 'device-on' : ''} ${entity.type} ${isControl ? 'clickable' : ''} ${isDimmer ? 'variant-dimmer' : ''}`;
+                const alertClasses = this.getAlertClasses(entity, stateData);
+        const cardClass = `card ${isActive ? 'device-on' : ''} ${entity.type} ${isControl ? 'clickable' : ''} ${isDimmer ? 'variant-dimmer' : ''} ${alertClasses.join(' ')}`;
         const iconColor = isActive ? 'var(--accent-color)' : 'var(--text-secondary)';
 
 
@@ -475,6 +473,27 @@ const UI = {
         } else if (rainContainer) {
             rainContainer.remove();
         }
+    },
+
+    getAlertClasses(entity, stateData) {
+        const classes = [];
+        const isActive = stateData.state === 'on' || stateData.state === 'open';
+        
+        // Critical: Leak or Humidity > 70%
+        const isLeak = stateData.attributes?.device_class === 'moisture' && stateData.state === 'on';
+        const isHighHumidity = (entity.type === 'humidity' || (entity.type === 'sensor' && stateData.attributes?.unit_of_measurement === '%')) && 
+                               parseFloat(stateData.state) > 70;
+                               
+        if (isLeak || isHighHumidity) classes.push('alert-pulse');
+        
+        // Warning: Door or Window Open
+        const isEntryOpen = (entity.type === 'binary_sensor' || entity.variant === 'door' || entity.variant === 'window') && 
+                            (stateData.attributes?.device_class === 'door' || stateData.attributes?.device_class === 'window') && 
+                            isActive;
+                            
+        if (isEntryOpen) classes.push('warning-pulse');
+        
+        return classes;
     }
 };
 
