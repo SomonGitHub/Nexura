@@ -291,7 +291,7 @@ const UI = {
             statusText = 'En direct';
         }
 
-                const alertClasses = this.getAlertClasses(entity, stateData);
+        const alertClasses = this.getAlertClasses(entity, stateData);
         const cardClass = `card ${isActive ? 'device-on' : ''} ${entity.type} ${isControl ? 'clickable' : ''} ${isDimmer ? 'variant-dimmer' : ''} ${alertClasses.join(' ')}`;
         const iconColor = isActive ? 'var(--accent-color)' : 'var(--text-secondary)';
 
@@ -443,6 +443,7 @@ const UI = {
 
     updateAmbiance(allStates) {
         this.updateWeather(allStates);
+        this.updateOracle(allStates);
     },
 
     updateWeather(allStates) {
@@ -478,22 +479,97 @@ const UI = {
     getAlertClasses(entity, stateData) {
         const classes = [];
         const isActive = stateData.state === 'on' || stateData.state === 'open';
-        
+
         // Critical: Leak or Humidity > 70%
         const isLeak = stateData.attributes?.device_class === 'moisture' && stateData.state === 'on';
-        const isHighHumidity = (entity.type === 'humidity' || (entity.type === 'sensor' && stateData.attributes?.unit_of_measurement === '%')) && 
-                               parseFloat(stateData.state) > 70;
-                               
+        const isHighHumidity = (entity.type === 'humidity' || (entity.type === 'sensor' && stateData.attributes?.unit_of_measurement === '%')) &&
+            parseFloat(stateData.state) > 70;
+
         if (isLeak || isHighHumidity) classes.push('alert-pulse');
-        
+
         // Warning: Door or Window Open
-        const isEntryOpen = (entity.type === 'binary_sensor' || entity.variant === 'door' || entity.variant === 'window') && 
-                            (stateData.attributes?.device_class === 'door' || stateData.attributes?.device_class === 'window') && 
-                            isActive;
-                            
+        const isEntryOpen = (entity.type === 'binary_sensor' || entity.variant === 'door' || entity.variant === 'window') &&
+            (stateData.attributes?.device_class === 'door' || stateData.attributes?.device_class === 'window') &&
+            isActive;
+
         if (isEntryOpen) classes.push('warning-pulse');
-        
+
         return classes;
+    },
+
+    updateOracle(allStates) {
+        const oracle = document.getElementById('nexura-oracle');
+        const textEl = document.getElementById('oracle-text');
+        if (!oracle || !textEl) return;
+
+        const managedEntities = JSON.parse(localStorage.getItem('domotique_entities')) || [];
+        const hour = new Date().getHours();
+
+        let message = "";
+        let type = "info"; // info, eco, alert
+
+        // 1. Critical Alerts Priority
+        const moistureLeak = allStates.find(s => s.attributes?.device_class === 'moisture' && s.state === 'on');
+        if (moistureLeak) {
+            message = "Alerte de fuite détectée ! Vérifiez vos capteurs immédiatement.";
+            type = "alert";
+        }
+
+        // 2. Weather Context
+        if (!message) {
+            const weather = allStates.find(s => s.entity_id.startsWith('weather.'));
+            if (weather && (weather.state === 'rainy' || weather.state === 'pouring')) {
+                message = "Il pleut dehors. Pensez à fermer les fenêtres et velux.";
+                type = "info";
+            }
+        }
+
+        // 3. Energy Rules (Window Open + Climate/Heater)
+        if (!message) {
+            const openWindows = allStates.filter(s => s.attributes?.device_class === 'window' && s.state === 'on');
+            const activeHeaters = allStates.filter(s => (s.entity_id.startsWith('climate.') || s.entity_id.startsWith('switch.')) && s.state === 'on');
+
+            if (openWindows.length > 0 && activeHeaters.length > 0) {
+                message = "Alerte Éco : Des fenêtres sont ouvertes alors que le chauffage est actif.";
+                type = "eco";
+            }
+        }
+
+        // 4. Energy Rules (Lights on in empty rooms - if presence sensors exist)
+        if (!message) {
+            const lightsOn = allStates.filter(s => s.entity_id.startsWith('light.') && s.state === 'on');
+            if (lightsOn.length > 5) {
+                message = `${lightsOn.length} lumières sont allumées. Est-ce vraiment nécessaire ?`;
+                type = "eco";
+            }
+        }
+
+        // 5. Comfort (Humidity)
+        if (!message) {
+            const highHumidity = allStates.find(s => (s.attributes?.device_class === 'humidity' || s.attributes?.unit_of_measurement === '%') && parseFloat(s.state) > 75);
+            if (highHumidity) {
+                message = "L'air est très humide à l'intérieur. Une aération serait bénéfique.";
+                type = "info";
+            }
+        }
+
+        // 6. Default Biorythmic Greeting
+        if (!message) {
+            if (hour >= 5 && hour < 9) message = "Bon réveil ! Vos systèmes sont prêts pour la journée.";
+            else if (hour >= 22 || hour < 5) message = "La maison passe en mode veille. Bonne nuit.";
+            else message = "Tout est calme. Nexura veille sur votre confort.";
+        }
+
+        // Apply
+        if (textEl.textContent !== message) {
+            oracle.classList.remove('visible');
+            setTimeout(() => {
+                textEl.textContent = message;
+                oracle.className = `oracle-banner visible oracle-${type}`;
+            }, 500);
+        } else if (!oracle.classList.contains('visible')) {
+            oracle.classList.add('visible');
+        }
     }
 };
 

@@ -181,6 +181,61 @@ body {
   }
 }
 
+/* Oracle Nexura */
+.oracle-banner {
+  font-family: 'Inter', sans-serif;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  color: var(--text-secondary);
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  opacity: 0;
+  transform: translateY(10px);
+  transition: all 0.5s ease;
+}
+
+.oracle-banner.visible {
+  opacity: 0.8;
+  transform: translateY(0);
+}
+
+.oracle-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent-color);
+  box-shadow: 0 0 10px var(--accent-color);
+  animation: oracle-scintillate 2s infinite ease-in-out;
+}
+
+.oracle-banner.oracle-eco .oracle-dot {
+  background: #10B981;
+  box-shadow: 0 0 10px #10B981;
+}
+
+.oracle-banner.oracle-alert .oracle-dot {
+  background: #EF4444;
+  box-shadow: 0 0 10px #EF4444;
+}
+
+@keyframes oracle-scintillate {
+
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.5;
+  }
+
+  50% {
+    transform: scale(1.3);
+    opacity: 1;
+  }
+}
+
 /* Alert Pulsation */
 .alert-pulse {
   animation: pulse-glow 2s infinite ease-in-out;
