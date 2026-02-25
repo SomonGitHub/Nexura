@@ -722,14 +722,24 @@ const UI = {
     updateEnergyFlow(allStates) {
         if (!this._ef.canvas) return;
 
-        // 1. Find Energy Source Position
+        // 1. Find Energy Source Position (Fallback to Logo if card is hidden)
         const energyCard = document.getElementById('kpiEnergy');
-        if (energyCard && energyCard.style.display !== 'none') {
+        if (energyCard && energyCard.style.display !== 'none' && energyCard.offsetHeight > 0) {
             this._ef.energySourceRect = energyCard.getBoundingClientRect();
+        } else {
+            // Fallback: Use the Nexura Logo in the sidebar as the source of "Nexura Energy"
+            const logo = document.querySelector('.logo-container');
+            if (logo) this._ef.energySourceRect = logo.getBoundingClientRect();
         }
 
         // 2. Find active target cards (on devices)
-        const activeCards = document.querySelectorAll('.card.device-on:not(.kpi-card)');
+        let activeCards = document.querySelectorAll('.card.device-on:not(.kpi-card)');
+
+        // Fallback: If no devices are on, target the Room Cards to show "House Vitality"
+        if (activeCards.length === 0) {
+            activeCards = document.querySelectorAll('#roomCardsGrid .card');
+        }
+
         this._ef.targets = Array.from(activeCards).map(c => c.getBoundingClientRect());
 
         // 3. Update speed based on energy value
@@ -737,11 +747,15 @@ const UI = {
         if (energyState) {
             const val = parseFloat(energyState.state) || 0;
             this._ef.speedMultiplier = Math.min(Math.max(val / 500, 0.5), 5); // From 0.5x to 5x speed
+        } else {
+            this._ef.speedMultiplier = 1; // Default speed if no sensor
         }
 
         // 4. Spawn particles if we have source and targets
         if (this._ef.energySourceRect && this._ef.targets.length > 0 && this._ef.particles.length < 50) {
-            if (Math.random() < 0.1 * this._ef.speedMultiplier) {
+            // Slightly lower spawn rate if using fallbacks to keep it elegant
+            const spawnRate = (activeCards[0]?.id === 'roomCardsGrid' ? 0.05 : 0.1);
+            if (Math.random() < spawnRate * this._ef.speedMultiplier) {
                 const target = this._ef.targets[Math.floor(Math.random() * this._ef.targets.length)];
                 this._ef.particles.push({
                     x: this._ef.energySourceRect.left + this._ef.energySourceRect.width / 2,
