@@ -472,6 +472,31 @@ body {
     inset 0 1px 2px rgba(255, 255, 255, 0.25);
 }
 
+/* Frost & Focus - Minimaliste Intelligent */
+.card.is-inactive {
+  filter: blur(2px) grayscale(0.5) opacity(0.6);
+  pointer-events: none;
+  /* Discret, ne réagit plus aux clics si inactif */
+}
+
+.card.is-inactive:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+/* Energy Flow Canvas */
+#energy-flow-canvas {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 10;
+  /* Above cards but below modals if any */
+  opacity: 0.6;
+}
+
 /* Dashboard Container & 2-Column Layout */
 .dashboard-container {
   display: grid;

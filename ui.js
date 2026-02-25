@@ -164,10 +164,16 @@ const UI = {
                 }
             }
 
-            // 4. Update Alert Pulsations
+            // 4. Update Alert Pulsations & Frost Mode
             const alertClasses = this.getAlertClasses(entity, stateData);
             card.classList.toggle('alert-pulse', alertClasses.includes('alert-pulse'));
             card.classList.toggle('warning-pulse', alertClasses.includes('warning-pulse'));
+
+            // Frost & Focus: Blur if not active
+            const isInactive = !isActive && stateData.state !== 'unavailable'; // Sensors are usually always 'active' in terms of display
+            // Actually, for sensors, we want them shown. Let's refine:
+            const canBeInactive = ['light', 'switch', 'shutter', 'binary_sensor'].includes(entity.type);
+            card.classList.toggle('is-inactive', canBeInactive && !isActive);
         });
 
         this.logMemory(`Update ${containerId}`);
@@ -292,7 +298,10 @@ const UI = {
         }
 
         const alertClasses = this.getAlertClasses(entity, stateData);
-        const cardClass = `card ${isActive ? 'device-on' : ''} ${entity.type} ${isControl ? 'clickable' : ''} ${isDimmer ? 'variant-dimmer' : ''} ${alertClasses.join(' ')}`;
+        const canBeInactive = ['light', 'switch', 'shutter', 'binary_sensor'].includes(entity.type);
+        const isInactiveClass = (canBeInactive && !isActive) ? 'is-inactive' : '';
+
+        const cardClass = `card ${isActive ? 'device-on' : ''} ${entity.type} ${isControl ? 'clickable' : ''} ${isDimmer ? 'variant-dimmer' : ''} ${alertClasses.join(' ')} ${isInactiveClass}`;
         const iconColor = isActive ? 'var(--accent-color)' : 'var(--text-secondary)';
 
 
@@ -445,6 +454,7 @@ const UI = {
         this.updateWeather(allStates);
         this.updateOracle(allStates);
         this.updateSoundscape(allStates);
+        this.updateEnergyFlow(allStates);
     },
 
     updateWeather(allStates) {
@@ -679,6 +689,105 @@ const UI = {
                 clearInterval(interval);
             }
         }, 200);
+    },
+
+    // Energy Flow Particle Engine
+    _ef: {
+        canvas: null,
+        ctx: null,
+        particles: [],
+        lastTime: 0,
+        energySourceRect: null,
+        targets: [],
+        speedMultiplier: 1
+    },
+
+    initEnergyFlow() {
+        this._ef.canvas = document.getElementById('energy-flow-canvas');
+        if (!this._ef.canvas) return;
+        this._ef.ctx = this._ef.canvas.getContext('2d');
+
+        window.addEventListener('resize', () => this._resizeEnergyCanvas());
+        this._resizeEnergyCanvas();
+
+        this._animateEnergyFlow();
+    },
+
+    _resizeEnergyCanvas() {
+        if (!this._ef.canvas) return;
+        this._ef.canvas.width = window.innerWidth;
+        this._ef.canvas.height = window.innerHeight;
+    },
+
+    updateEnergyFlow(allStates) {
+        if (!this._ef.canvas) return;
+
+        // 1. Find Energy Source Position
+        const energyCard = document.getElementById('kpiEnergy');
+        if (energyCard && energyCard.style.display !== 'none') {
+            this._ef.energySourceRect = energyCard.getBoundingClientRect();
+        }
+
+        // 2. Find active target cards (on devices)
+        const activeCards = document.querySelectorAll('.card.device-on:not(.kpi-card)');
+        this._ef.targets = Array.from(activeCards).map(c => c.getBoundingClientRect());
+
+        // 3. Update speed based on energy value
+        const energyState = allStates?.find(s => s.entity_id === 'sensor.energy_consumption' || s.attributes?.device_class === 'energy');
+        if (energyState) {
+            const val = parseFloat(energyState.state) || 0;
+            this._ef.speedMultiplier = Math.min(Math.max(val / 500, 0.5), 5); // From 0.5x to 5x speed
+        }
+
+        // 4. Spawn particles if we have source and targets
+        if (this._ef.energySourceRect && this._ef.targets.length > 0 && this._ef.particles.length < 50) {
+            if (Math.random() < 0.1 * this._ef.speedMultiplier) {
+                const target = this._ef.targets[Math.floor(Math.random() * this._ef.targets.length)];
+                this._ef.particles.push({
+                    x: this._ef.energySourceRect.left + this._ef.energySourceRect.width / 2,
+                    y: this._ef.energySourceRect.top + this._ef.energySourceRect.height / 2,
+                    targetX: target.left + target.width / 2,
+                    targetY: target.top + target.height / 2,
+                    progress: 0,
+                    speed: 0.005 * (0.8 + Math.random() * 0.4) * this._ef.speedMultiplier,
+                    size: 2 + Math.random() * 2
+                });
+            }
+        }
+    },
+
+    _animateEnergyFlow(timestamp) {
+        if (!this._ef.ctx) return;
+
+        const ctx = this._ef.ctx;
+        ctx.clearRect(0, 0, this._ef.canvas.width, this._ef.canvas.height);
+
+        this._ef.particles = this._ef.particles.filter(p => {
+            p.progress += p.speed;
+            if (p.progress >= 1) return false;
+
+            // Draw particle
+            const x = p.x + (p.targetX - p.x) * p.progress;
+            const y = p.y + (p.targetY - p.y) * p.progress;
+
+            // Add a little wave effect
+            const curve = Math.sin(p.progress * Math.PI) * 20;
+            const finalX = x + curve * (p.targetY - p.y) / 500;
+            const finalY = y - curve * (p.targetX - p.x) / 500;
+
+            const gradient = ctx.createRadialGradient(finalX, finalY, 0, finalX, finalY, p.size * 2);
+            gradient.addColorStop(0, 'rgba(108, 193, 189, 0.8)');
+            gradient.addColorStop(1, 'rgba(108, 193, 189, 0)');
+
+            ctx.fillStyle = gradient;
+            ctx.beginPath();
+            ctx.arc(finalX, finalY, p.size * 2, 0, Math.PI * 2);
+            ctx.fill();
+
+            return true;
+        });
+
+        requestAnimationFrame((t) => this._animateEnergyFlow(t));
     }
 };
 
@@ -686,6 +795,7 @@ const UI = {
 document.addEventListener('DOMContentLoaded', () => {
     UI.initPageTransitions();
     UI.initAmbiance();
+    UI.initEnergyFlow();
 });
 
 
