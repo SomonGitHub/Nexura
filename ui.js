@@ -166,7 +166,7 @@ const UI = {
 
             // 4. Update Alert Pulsations
             const isCritical = (entity.type === 'sensor' && stateData.attributes?.device_class === 'moisture' && stateData.state === 'on') ||
-                (entity.type === 'humidity' && parseFloat(stateData.state) > 80);
+                (entity.type === 'humidity' && parseFloat(stateData.state) > 70);
             const isWarning = (entity.type === 'binary_sensor' && (stateData.attributes?.device_class === 'door' || stateData.attributes?.device_class === 'window') && stateData.state === 'on');
 
             card.classList.toggle('alert-pulse', isCritical);
