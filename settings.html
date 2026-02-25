@@ -686,18 +686,24 @@
         loadTuyaSettings();
 
         if (saveTuyaBtn) {
-            saveTuyaBtn.addEventListener('click', () => {
+            saveTuyaBtn.addEventListener('click', async () => {
                 saveTuyaSettings();
                 saveTuyaBtn.textContent = 'Enregistré ✓';
                 saveTuyaBtn.style.backgroundColor = '#10b981';
 
                 // Sync to cloud
-                if (window.syncToCloud) window.syncToCloud();
+                if (window.syncToCloud) {
+                    const success = await window.syncToCloud();
+                    if (!success) {
+                        saveTuyaBtn.textContent = 'Échec Synchronisation Cloud';
+                        saveTuyaBtn.style.backgroundColor = '#ef4444';
+                    }
+                }
 
                 setTimeout(() => {
                     saveTuyaBtn.textContent = 'Sauvegarder';
                     saveTuyaBtn.style.backgroundColor = 'var(--accent-color)';
-                }, 2000);
+                }, 3000);
             });
         }
 
@@ -727,17 +733,23 @@
         loadXiaomiSettings();
 
         if (saveXiaomiBtn) {
-            saveXiaomiBtn.addEventListener('click', () => {
+            saveXiaomiBtn.addEventListener('click', async () => {
                 saveXiaomiSettings();
                 saveXiaomiBtn.textContent = 'Enregistré ✓';
                 saveXiaomiBtn.style.backgroundColor = '#10b981';
 
-                if (window.syncToCloud) window.syncToCloud();
+                if (window.syncToCloud) {
+                    const success = await window.syncToCloud();
+                    if (!success) {
+                        saveXiaomiBtn.textContent = 'Échec Synchronisation Cloud';
+                        saveXiaomiBtn.style.backgroundColor = '#ef4444';
+                    }
+                }
 
                 setTimeout(() => {
                     saveXiaomiBtn.textContent = 'Sauvegarder';
                     saveXiaomiBtn.style.backgroundColor = 'var(--accent-color)';
-                }, 2000);
+                }, 3000);
             });
         }
 

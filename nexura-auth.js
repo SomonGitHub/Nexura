@@ -250,7 +250,7 @@ async function callNexuraApi(method, body = null) {
 }
 
 async function syncToCloud() {
-    if (!currentSession || !isInitialSyncDone) return;
+    if (!currentSession || !isInitialSyncDone) return false;
 
     try {
         const rooms = JSON.parse(localStorage.getItem('domotique_rooms')) || [];
@@ -274,23 +274,26 @@ async function syncToCloud() {
             theme: localStorage.getItem('sv_theme') || 'default',
             ha_url: haUrl || null,
             ha_entity_energy: haEnergy || null,
+            ha_token_enc: null,
             tuya_client_id: localStorage.getItem('tuyaClientId') || null,
+            tuya_secret_enc: null,
             tuya_region: localStorage.getItem('tuyaRegion') || null,
             xiaomi_user: localStorage.getItem('xiaomiUser') || null,
+            xiaomi_password_enc: null,
             xiaomi_region: localStorage.getItem('xiaomiRegion') || null
         };
 
         const tuyaSecret = localStorage.getItem('tuyaSecret');
-        if (tuyaSecret) {
+        if (tuyaSecret && currentSession?.user?.id) {
             profileData.tuya_secret_enc = CryptoJS.AES.encrypt(tuyaSecret, currentSession.user.id).toString();
         }
 
-        if (haToken) {
+        if (haToken && currentSession?.user?.id) {
             profileData.ha_token_enc = CryptoJS.AES.encrypt(haToken, currentSession.user.id).toString();
         }
 
         const xiaomiPassword = localStorage.getItem('xiaomiPassword');
-        if (xiaomiPassword) {
+        if (xiaomiPassword && currentSession?.user?.id) {
             profileData.xiaomi_password_enc = CryptoJS.AES.encrypt(xiaomiPassword, currentSession.user.id).toString();
         }
 
@@ -298,8 +301,10 @@ async function syncToCloud() {
 
         console.log('✅ Synchronisation Cloud via Edge complète !');
         window.dispatchEvent(new CustomEvent('dataSynced'));
+        return true;
     } catch (err) {
         console.error('Erreur lors de la synchronisation via Edge:', err);
+        return false;
     }
 }
 window.syncToCloud = syncToCloud;
