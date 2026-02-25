@@ -245,7 +245,7 @@ async function callNexuraApi(method, body = null) {
     if (body) options.body = JSON.stringify({ userId: currentSession.user.id, ...body });
 
     const response = await fetch(url, options);
-    if (!response.ok) throw new Error(`API Error: ${response.statusText}`);
+    if (!response.ok) { let errMsg = response.statusText; try { const errData = await response.json(); if (errData && errData.error) errMsg = errData.error; } catch(e) {} throw new Error(`API Error: ${errMsg}`); }
     return await response.json();
 }
 

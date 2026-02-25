@@ -36,7 +36,7 @@ export async function onRequestGet(context) {
             headers: { "Content-Type": "application/json" }
         });
     } catch (err) {
-        return new Response(JSON.stringify({ error: err.message }), { status: 500 });
+        return new Response(JSON.stringify({ error: err.message || "Unknown error" }), { status: 500, headers: { "Content-Type": "application/json" } });
     }
 }
 
@@ -109,6 +109,6 @@ export async function onRequestPost(context) {
             headers: { "Content-Type": "application/json" }
         });
     } catch (err) {
-        return new Response(JSON.stringify({ error: err.message }), { status: 500 });
+        return new Response(JSON.stringify({ error: err.message || "Unknown error" }), { status: 500, headers: { "Content-Type": "application/json" } });
     }
 }
