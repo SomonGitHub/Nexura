@@ -221,7 +221,10 @@ async function logout() {
         'sv_theme',
         'tuyaClientId',
         'tuyaSecret',
-        'tuyaRegion'
+        'tuyaRegion',
+        'xiaomiUser',
+        'xiaomiPassword',
+        'xiaomiRegion'
     ];
 
     keysToClear.forEach(key => localStorage.removeItem(key));
@@ -272,7 +275,9 @@ async function syncToCloud() {
             ha_url: haUrl || null,
             ha_entity_energy: haEnergy || null,
             tuya_client_id: localStorage.getItem('tuyaClientId') || null,
-            tuya_region: localStorage.getItem('tuyaRegion') || null
+            tuya_region: localStorage.getItem('tuyaRegion') || null,
+            xiaomi_user: localStorage.getItem('xiaomiUser') || null,
+            xiaomi_region: localStorage.getItem('xiaomiRegion') || null
         };
 
         const tuyaSecret = localStorage.getItem('tuyaSecret');
@@ -282,6 +287,11 @@ async function syncToCloud() {
 
         if (haToken) {
             profileData.ha_token_enc = CryptoJS.AES.encrypt(haToken, currentSession.user.id).toString();
+        }
+
+        const xiaomiPassword = localStorage.getItem('xiaomiPassword');
+        if (xiaomiPassword) {
+            profileData.xiaomi_password_enc = CryptoJS.AES.encrypt(xiaomiPassword, currentSession.user.id).toString();
         }
 
         await callNexuraApi('POST', { type: 'profile', data: profileData });
@@ -338,6 +348,15 @@ async function syncFromCloud() {
                     const originalSecret = bytes.toString(CryptoJS.enc.Utf8);
                     if (originalSecret) localStorage.setItem('tuyaSecret', originalSecret);
                 } catch (e) { console.error("Tuya Decryption failed", e); }
+            }
+            if (profile.xiaomi_user) localStorage.setItem('xiaomiUser', profile.xiaomi_user);
+            if (profile.xiaomi_region) localStorage.setItem('xiaomiRegion', profile.xiaomi_region);
+            if (profile.xiaomi_password_enc) {
+                try {
+                    const bytes = CryptoJS.AES.decrypt(profile.xiaomi_password_enc, currentSession.user.id);
+                    const originalPassword = bytes.toString(CryptoJS.enc.Utf8);
+                    if (originalPassword) localStorage.setItem('xiaomiPassword', originalPassword);
+                } catch (e) { console.error("Xiaomi Decryption failed", e); }
             }
         }
 

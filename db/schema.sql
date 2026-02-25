@@ -13,7 +13,10 @@ CREATE TABLE IF NOT EXISTS profiles (
   theme TEXT DEFAULT 'default',
   tuya_client_id TEXT,
   tuya_secret_enc TEXT,
-  tuya_region TEXT
+  tuya_region TEXT,
+  xiaomi_user TEXT,
+  xiaomi_password_enc TEXT,
+  xiaomi_region TEXT
 );
 
 -- 2. Rooms table

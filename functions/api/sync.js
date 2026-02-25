@@ -51,8 +51,8 @@ export async function onRequestPost(context) {
     try {
         if (type === 'profile') {
             await env.DB.prepare(`
-                INSERT INTO profiles (id, tier, dashboard_config, ha_url, ha_token_enc, ha_entity_energy, theme, tuya_client_id, tuya_secret_enc, tuya_region, updated_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+                INSERT INTO profiles (id, tier, dashboard_config, ha_url, ha_token_enc, ha_entity_energy, theme, tuya_client_id, tuya_secret_enc, tuya_region, xiaomi_user, xiaomi_password_enc, xiaomi_region, updated_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
                 ON CONFLICT(id) DO UPDATE SET
                 tier = EXCLUDED.tier,
                 dashboard_config = EXCLUDED.dashboard_config,
@@ -63,6 +63,9 @@ export async function onRequestPost(context) {
                 tuya_client_id = EXCLUDED.tuya_client_id,
                 tuya_secret_enc = EXCLUDED.tuya_secret_enc,
                 tuya_region = EXCLUDED.tuya_region,
+                xiaomi_user = EXCLUDED.xiaomi_user,
+                xiaomi_password_enc = EXCLUDED.xiaomi_password_enc,
+                xiaomi_region = EXCLUDED.xiaomi_region,
                 updated_at = EXCLUDED.updated_at
             `).bind(
                 userId,
@@ -74,7 +77,10 @@ export async function onRequestPost(context) {
                 data.theme,
                 data.tuya_client_id || null,
                 data.tuya_secret_enc || null,
-                data.tuya_region || null
+                data.tuya_region || null,
+                data.xiaomi_user || null,
+                data.xiaomi_password_enc || null,
+                data.xiaomi_region || null
             ).run();
         }
         else if (type === 'rooms') {
