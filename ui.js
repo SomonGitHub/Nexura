@@ -334,6 +334,9 @@ const UI = {
         let stateDisplay = this.getStateDisplay(entity, stateData);
         let icon = this.getIconForEntity(entity, stateData);
 
+        const isTemperature = (entity.type === 'temperature') || (entity.type === 'sensor' && (stateData.attributes?.unit_of_measurement === '°C' || stateData.attributes?.unit_of_measurement === '°F' || stateData.attributes?.device_class === 'temperature'));
+        const isHumidity = (entity.type === 'humidity') || (entity.type === 'sensor' && (stateData.attributes?.unit_of_measurement === '%' || stateData.attributes?.device_class === 'humidity'));
+
         const alertClasses = this.getAlertClasses(entity, stateData);
         // Actions (lights, switches, shutters) should NOT be frosted
         const canBeInactive = (['binary_sensor', 'sensor'].includes(entity.type) || entity.haId.startsWith('sensor.')) && !isTemperature && !isHumidity;
