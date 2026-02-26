@@ -89,10 +89,6 @@
                             style="font-size: 3.5rem; font-weight: 800; color: white; font-family: 'Outfit', sans-serif;">
                             --°C
                         </div>
-                        <div id="weather-temp-range"
-                            style="font-size: 1.4rem; font-weight: 600; opacity: 0.8; letter-spacing: 0.5px; margin-top: -5px;">
-                            -- / --
-                        </div>
                     </div>
                 </div>
             </header>
@@ -627,56 +623,22 @@ CREATE POLICY "Users can manage their entities" ON public.entities FOR ALL USING
                     const currentTemp = Math.round(weatherEntity.attributes.temperature || 0);
                     const condition = weatherEntity.state;
 
-                    // Forecast: Exhaustive search for min/max
-                    let minTemp = '--';
-                    let maxTemp = '--';
-                    const attr = weatherEntity.attributes;
-                    const minKeys = ['templow', 'temperature_low', 'min_temp', 'low_temp'];
-                    const maxKeys = ['temperature_high', 'max_temp', 'high_temp', 'temp_high'];
-
-                    const findValue = (obj, keys) => {
-                        if (!obj) return '--';
-                        for (const key of keys) {
-                            if (obj[key] !== undefined && obj[key] !== null) return Math.round(obj[key]);
-                        }
-                        return '--';
-                    };
-
-                    minTemp = findValue(attr, minKeys);
-                    maxTemp = findValue(attr, maxKeys);
-
-                    const forecast = attr.forecast;
-                    if ((minTemp === '--' || maxTemp === '--') && Array.isArray(forecast) && forecast.length > 0) {
-                        const today = forecast[0];
-                        if (minTemp === '--') minTemp = findValue(today, minKeys);
-                        if (maxTemp === '--') {
-                            maxTemp = findValue(today, maxKeys);
-                            if (maxTemp === '--' && today.temperature !== undefined) maxTemp = Math.round(today.temperature);
-                        }
-                    }
-
-                    // FALLBACK: Search in ALL entities if still missing (common for Météo-France)
-                    if (minTemp === '--') {
-                        const sMin = allStates.find(s => s.entity_id.includes('temp_min') || s.entity_id.includes('templow') || s.entity_id.includes('temperature_low'));
-                        if (sMin) minTemp = Math.round(parseFloat(sMin.state));
-                    }
-                    if (maxTemp === '--') {
-                        const sMax = allStates.find(s => s.entity_id.includes('temp_max') || s.entity_id.includes('temperature_high') || s.entity_id.includes('temp_high'));
-                        if (sMax) maxTemp = Math.round(parseFloat(sMax.state));
-                    }
-
                     document.getElementById('weather-temp-current').textContent = `${currentTemp}°C`;
-                    document.getElementById('weather-temp-range').textContent = `${minTemp}° / ${maxTemp}°`;
 
                     const iconEl = document.getElementById('weather-icon');
-                    const newIcon = UI.getWeatherIcon(condition);
-                    if (iconEl && iconEl.getAttribute('data-lucide') !== newIcon) {
-                        iconEl.setAttribute('data-lucide', newIcon);
-                        UI.refreshIcons(iconEl.parentElement);
+                    if (iconEl) {
+                        const newIcon = UI.getWeatherIcon(condition);
+                        const newColor = UI.getWeatherColor(condition);
+                        if (iconEl.getAttribute('data-lucide') !== newIcon) {
+                            iconEl.setAttribute('data-lucide', newIcon);
+                            UI.refreshIcons(iconEl.parentElement);
+                        }
+                        iconEl.style.color = newColor;
                     }
                 } else if (weatherStatusEl) {
                     weatherStatusEl.style.display = 'none';
                 }
+
 
                 // Toggle Quick Actions Section
                 const quickActions = document.getElementById('quickActionsSection');
