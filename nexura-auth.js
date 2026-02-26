@@ -176,7 +176,11 @@ window.isFeatureAllowed = isFeatureAllowed;
 
 function openAuthModal() {
     const modal = getAuthModal();
-    if (modal) modal.style.display = 'flex';
+    if (modal) {
+        modal.style.display = 'flex';
+        modal.offsetHeight; // reflow
+        modal.classList.add('visible');
+    }
     initSupabase();
 }
 window.openAuthModal = openAuthModal;
@@ -200,7 +204,12 @@ window.toggleAuthMode = toggleAuthMode;
 
 function closeAuthModal() {
     const modal = getAuthModal();
-    if (modal) modal.style.display = 'none';
+    if (modal) {
+        modal.classList.remove('visible');
+        setTimeout(() => {
+            modal.style.display = 'none';
+        }, 300); // match CSS transition
+    }
 }
 window.closeAuthModal = closeAuthModal;
 

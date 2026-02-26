@@ -1271,15 +1271,23 @@
 
         openScannerBtn.addEventListener('click', () => {
             scannerModal.style.display = 'flex';
+            scannerModal.offsetHeight; // reflow
+            scannerModal.classList.add('visible');
             lucide.createIcons(); // Ensure icons in modal are rendered
         });
 
         closeScannerBtn.addEventListener('click', () => {
-            scannerModal.style.display = 'none';
+            scannerModal.classList.remove('visible');
+            setTimeout(() => {
+                scannerModal.style.display = 'none';
+            }, 300);
         });
 
         window.onclick = (event) => {
-            if (event.target == scannerModal) scannerModal.style.display = 'none';
+            if (event.target == scannerModal) {
+                scannerModal.classList.remove('visible');
+                setTimeout(() => scannerModal.style.display = 'none', 300);
+            }
         }
 
         startScanBtn.addEventListener('click', async () => {

@@ -409,6 +409,27 @@ CREATE POLICY "Users can manage their entities" ON public.entities FOR ALL USING
         const token = localStorage.getItem('haToken');
         let dashboardCards = JSON.parse(localStorage.getItem('dashboard_cards')) || [];
 
+        // Function open modal with transition
+        window.openAuthModal = function () {
+            const modal = document.getElementById('authModal');
+            if (modal) {
+                modal.style.display = 'flex';
+                // Trigger reflow to apply display before class
+                modal.offsetHeight;
+                modal.classList.add('visible');
+            }
+        };
+
+        window.closeAuthModal = function () {
+            const modal = document.getElementById('authModal');
+            if (modal) {
+                modal.classList.remove('visible');
+                setTimeout(() => {
+                    modal.style.display = 'none';
+                }, 300); // match CSS transition duration
+            }
+        };
+
         // Migration: ensure every item is an object { id, size }
         const needsMigration = dashboardCards.some(card => typeof card === 'string');
         if (needsMigration) {

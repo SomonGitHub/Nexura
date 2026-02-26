@@ -183,13 +183,23 @@ const UI = {
 
 
         if (container.children.length !== entities.length || container.querySelector('p')) {
-            let htmlBuffer = '';
+            // More graceful rebuild using DocumentFragment to avoid single heavy reflow if possible,
+            // though raw innerHTML is often fast, avoiding it destroys fewer event listeners.
+            const fragment = document.createDocumentFragment();
             entities.forEach(entity => {
                 const stateData = allStates.find(s => s.entity_id === entity.haId) || { state: 'unavailable' };
                 const size = entity.size || 'standard';
-                htmlBuffer += this.createDeviceCard(entity, stateData, { ...options, size });
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = this.createDeviceCard(entity, stateData, { ...options, size });
+                if (tempDiv.firstElementChild) fragment.appendChild(tempDiv.firstElementChild);
             });
-            container.innerHTML = htmlBuffer || `<p style="grid-column: 1/-1; text-align: center; color: var(--text-secondary); padding: 2rem; border: 1px dashed var(--glass-border); border-radius: 12px;">${options.emptyMessage || 'Aucun élément.'}</p>`;
+
+            if (entities.length === 0) {
+                container.innerHTML = `<p style="grid-column: 1/-1; text-align: center; color: var(--text-secondary); padding: 2rem; border: 1px dashed var(--glass-border); border-radius: 12px;">${options.emptyMessage || 'Aucun élément.'}</p>`;
+            } else {
+                container.innerHTML = '';
+                container.appendChild(fragment);
+            }
             this.refreshIcons(container);
             return;
         }
@@ -198,8 +208,16 @@ const UI = {
             const entity = entities[index];
             const card = container.children[index];
             if (!card || card.getAttribute('data-ha-id') !== entity.haId) {
-                // Mismatch, fallback to rebuild (should be rare with stable sort)
-                container.innerHTML = entities.map(e => this.createDeviceCard(e, allStates.find(s => s.entity_id === e.haId) || { state: 'unavailable' }, { ...options, size: e.size || 'standard' })).join('');
+                // Mismatch, fallback to rebuild
+                console.warn(`Card mismatch at index ${index}. Rebuilding grid.`);
+                const fragment = document.createDocumentFragment();
+                entities.forEach(e => {
+                    const tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = this.createDeviceCard(e, allStates.find(s => s.entity_id === e.haId) || { state: 'unavailable' }, { ...options, size: e.size || 'standard' });
+                    if (tempDiv.firstElementChild) fragment.appendChild(tempDiv.firstElementChild);
+                });
+                container.innerHTML = '';
+                container.appendChild(fragment);
                 this.refreshIcons(container);
                 return;
             }
@@ -815,7 +833,8 @@ const UI = {
         lastTime: 0,
         energySourceRect: null,
         targets: [],
-        speedMultiplier: 1
+        speedMultiplier: 1,
+        offscreenCanvas: null // Cache canvas for particles
     },
 
     initEnergyFlow() {
@@ -823,6 +842,32 @@ const UI = {
         this._ef.canvas = document.getElementById('energy-flow-canvas');
         if (!this._ef.canvas) return;
         this._ef.ctx = this._ef.canvas.getContext('2d');
+
+        // Pre-render particle to offscreen canvas
+        this._ef.offscreenCanvas = document.createElement('canvas');
+        this._ef.offscreenCanvas.width = 40; // Max size expected
+        this._ef.offscreenCanvas.height = 40;
+        const offCtx = this._ef.offscreenCanvas.getContext('2d');
+
+        const center = 20;
+        const maxRadius = 15; // Maps to size * 3 where size max is ~3.5
+
+        // Glow
+        const gradient = offCtx.createRadialGradient(center, center, 0, center, center, maxRadius);
+        gradient.addColorStop(0, 'rgba(108, 193, 189, 0.9)');
+        gradient.addColorStop(0.4, 'rgba(108, 193, 189, 0.3)');
+        gradient.addColorStop(1, 'rgba(108, 193, 189, 0)');
+
+        offCtx.fillStyle = gradient;
+        offCtx.beginPath();
+        offCtx.arc(center, center, maxRadius, 0, Math.PI * 2);
+        offCtx.fill();
+
+        // Core
+        offCtx.fillStyle = '#FFFFFF';
+        offCtx.beginPath();
+        offCtx.arc(center, center, maxRadius * 0.16, 0, Math.PI * 2); // 0.16 is approx 0.5 / 3
+        offCtx.fill();
 
         window.addEventListener('resize', () => this._resizeEnergyCanvas());
         this._resizeEnergyCanvas();
@@ -914,22 +959,18 @@ const UI = {
             const finalX = x + (curve * -dy / len);
             const finalY = y + (curve * dx / len);
 
-            // Draw Glow
-            const gradient = ctx.createRadialGradient(finalX, finalY, 0, finalX, finalY, p.size * 3);
-            gradient.addColorStop(0, 'rgba(108, 193, 189, 0.9)');
-            gradient.addColorStop(0.4, 'rgba(108, 193, 189, 0.3)');
-            gradient.addColorStop(1, 'rgba(108, 193, 189, 0)');
+            // Draw pre-rendered glow instead of calculating gradient
+            // Scale based on particle size relative to max size (3.5)
+            const scale = p.size / 3.5;
+            const drawSize = 40 * scale;
 
-            ctx.fillStyle = gradient;
-            ctx.beginPath();
-            ctx.arc(finalX, finalY, p.size * 3, 0, Math.PI * 2);
-            ctx.fill();
-
-            // Core
-            ctx.fillStyle = '#FFFFFF';
-            ctx.beginPath();
-            ctx.arc(finalX, finalY, p.size * 0.5, 0, Math.PI * 2);
-            ctx.fill();
+            ctx.drawImage(
+                this._ef.offscreenCanvas,
+                finalX - drawSize / 2,
+                finalY - drawSize / 2,
+                drawSize,
+                drawSize
+            );
 
             return true;
         });
