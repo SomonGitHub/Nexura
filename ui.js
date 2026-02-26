@@ -329,7 +329,7 @@ const UI = {
 
         const alertClasses = this.getAlertClasses(entity, stateData);
         // Actions (lights, switches, shutters) should NOT be frosted
-        const canBeInactive = ['binary_sensor', 'sensor', 'temperature', 'humidity'].includes(entity.type) || entity.haId.startsWith('sensor.');
+        const canBeInactive = ['binary_sensor', 'sensor'].includes(entity.type) || entity.haId.startsWith('sensor.');
         const frostEnabled = localStorage.getItem('ef_frost_enabled') !== 'false';
         const isInactiveClass = (frostEnabled && canBeInactive && !isActive) ? 'is-inactive' : '';
         const sizeClass = size !== 'standard' ? `card-${size}` : '';
