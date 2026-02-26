@@ -258,59 +258,68 @@ async function callNexuraApi(method, body = null) {
     return await response.json();
 }
 
+let syncTimeout = null;
 async function syncToCloud() {
     if (!currentSession || !isInitialSyncDone) return false;
 
-    try {
-        const rooms = JSON.parse(localStorage.getItem('domotique_rooms')) || [];
-        await callNexuraApi('POST', { type: 'rooms', data: rooms });
-
-        const entities = JSON.parse(localStorage.getItem('domotique_entities')) || [];
-        await callNexuraApi('POST', { type: 'entities', data: entities });
-
-        const dashboardCards = JSON.parse(localStorage.getItem('dashboard_cards')) || [];
-        const haUrl = localStorage.getItem('haUrl');
-        const haToken = localStorage.getItem('haToken');
-        const haEnergy = localStorage.getItem('haEntityEnergy');
-
-        const profileData = {
-            dashboard_config: dashboardCards,
-            tier: window.userTier,
-            theme: localStorage.getItem('sv_theme') || 'default',
-            ha_url: haUrl || null,
-            ha_entity_energy: haEnergy || null,
-            ha_token_enc: null,
-            tuya_client_id: localStorage.getItem('tuyaClientId') || null,
-            tuya_secret_enc: null,
-            tuya_region: localStorage.getItem('tuyaRegion') || null,
-            xiaomi_user: localStorage.getItem('xiaomiUser') || null,
-            xiaomi_password_enc: null,
-            xiaomi_region: localStorage.getItem('xiaomiRegion') || null
-        };
-
-        const tuyaSecret = localStorage.getItem('tuyaSecret');
-        if (tuyaSecret && currentSession?.user?.id) {
-            profileData.tuya_secret_enc = CryptoJS.AES.encrypt(tuyaSecret, currentSession.user.id).toString();
-        }
-
-        if (haToken && currentSession?.user?.id) {
-            profileData.ha_token_enc = CryptoJS.AES.encrypt(haToken, currentSession.user.id).toString();
-        }
-
-        const xiaomiPassword = localStorage.getItem('xiaomiPassword');
-        if (xiaomiPassword && currentSession?.user?.id) {
-            profileData.xiaomi_password_enc = CryptoJS.AES.encrypt(xiaomiPassword, currentSession.user.id).toString();
-        }
-
-        await callNexuraApi('POST', { type: 'profile', data: profileData });
-
-        console.log('✅ Synchronisation Cloud via Edge complète !');
-        window.dispatchEvent(new CustomEvent('dataSynced'));
-        return true;
-    } catch (err) {
-        console.error('Erreur lors de la synchronisation via Edge:', err);
-        return false;
+    if (syncTimeout) {
+        clearTimeout(syncTimeout);
     }
+
+    return new Promise((resolve) => {
+        syncTimeout = setTimeout(async () => {
+            try {
+                const rooms = JSON.parse(localStorage.getItem('domotique_rooms')) || [];
+                await callNexuraApi('POST', { type: 'rooms', data: rooms });
+
+                const entities = JSON.parse(localStorage.getItem('domotique_entities')) || [];
+                await callNexuraApi('POST', { type: 'entities', data: entities });
+
+                const dashboardCards = JSON.parse(localStorage.getItem('dashboard_cards')) || [];
+                const haUrl = localStorage.getItem('haUrl');
+                const haToken = localStorage.getItem('haToken');
+                const haEnergy = localStorage.getItem('haEntityEnergy');
+
+                const profileData = {
+                    dashboard_config: dashboardCards,
+                    tier: window.userTier,
+                    theme: localStorage.getItem('sv_theme') || 'default',
+                    ha_url: haUrl || null,
+                    ha_entity_energy: haEnergy || null,
+                    ha_token_enc: null,
+                    tuya_client_id: localStorage.getItem('tuyaClientId') || null,
+                    tuya_secret_enc: null,
+                    tuya_region: localStorage.getItem('tuyaRegion') || null,
+                    xiaomi_user: localStorage.getItem('xiaomiUser') || null,
+                    xiaomi_password_enc: null,
+                    xiaomi_region: localStorage.getItem('xiaomiRegion') || null
+                };
+
+                const tuyaSecret = localStorage.getItem('tuyaSecret');
+                if (tuyaSecret && currentSession?.user?.id) {
+                    profileData.tuya_secret_enc = CryptoJS.AES.encrypt(tuyaSecret, currentSession.user.id).toString();
+                }
+
+                if (haToken && currentSession?.user?.id) {
+                    profileData.ha_token_enc = CryptoJS.AES.encrypt(haToken, currentSession.user.id).toString();
+                }
+
+                const xiaomiPassword = localStorage.getItem('xiaomiPassword');
+                if (xiaomiPassword && currentSession?.user?.id) {
+                    profileData.xiaomi_password_enc = CryptoJS.AES.encrypt(xiaomiPassword, currentSession.user.id).toString();
+                }
+
+                await callNexuraApi('POST', { type: 'profile', data: profileData });
+
+                console.log('✅ Synchronisation Cloud via Edge complète !');
+                window.dispatchEvent(new CustomEvent('dataSynced'));
+                resolve(true);
+            } catch (err) {
+                console.error('Erreur lors de la synchronisation via Edge:', err);
+                resolve(false);
+            }
+        }, 1500); // 1.5s debounce
+    });
 }
 window.syncToCloud = syncToCloud;
 
