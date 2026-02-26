@@ -381,32 +381,7 @@ CREATE POLICY "Users can manage their entities" ON public.entities FOR ALL USING
     <script>
         lucide.createIcons();
 
-        const sidebar = document.getElementById('sidebar');
-        const toggleBtn = document.getElementById('toggleSidebar');
-        const sidebarIcon = document.getElementById('sidebarIcon');
-
-        // Initial icon and text state based on persistence
-        if (sidebar.classList.contains('collapsed')) {
-            sidebarIcon.setAttribute('data-lucide', 'chevron-right');
-            const navText = toggleBtn.querySelector('.nav-text');
-            if (navText) navText.textContent = '';
-        }
-
-        toggleBtn.addEventListener('click', () => {
-            const isCollapsed = sidebar.classList.toggle('collapsed');
-            localStorage.setItem('sidebar_collapsed', isCollapsed);
-
-            if (isCollapsed) {
-                sidebarIcon.setAttribute('data-lucide', 'chevron-right');
-                const navText = toggleBtn.querySelector('.nav-text');
-                if (navText) navText.textContent = '';
-            } else {
-                sidebarIcon.setAttribute('data-lucide', 'chevron-left');
-                const navText = toggleBtn.querySelector('.nav-text');
-                if (navText) navText.textContent = 'Réduire';
-            }
-            lucide.createIcons();
-        });
+        // Sidebar logic is handled by UI.initSidebar() loaded from ui.js
 
         const url = localStorage.getItem('haUrl');
         const token = localStorage.getItem('haToken');

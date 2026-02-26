@@ -722,21 +722,7 @@
             document.getElementById(`${tab}-tab`).classList.add('active');
         }
 
-        const sidebar = document.getElementById('sidebar');
-        const toggleBtn = document.getElementById('toggleSidebar');
-        const sidebarIcon = document.getElementById('sidebarIcon');
-
-        // Initial icon and text state based on persistence
-        if (sidebar.classList.contains('collapsed')) {
-            sidebarIcon.setAttribute('data-lucide', 'chevron-right');
-        }
-
-        toggleBtn.addEventListener('click', () => {
-            const isCollapsed = sidebar.classList.toggle('collapsed');
-            localStorage.setItem('sidebar_collapsed', isCollapsed);
-            sidebarIcon.setAttribute('data-lucide', isCollapsed ? 'chevron-right' : 'chevron-left');
-            lucide.createIcons();
-        });
+        // Sidebar logic is handled by UI.initSidebar() loaded from ui.js
 
         // --- HA Persistence & Test Logic ---
         const haUrlInput = document.getElementById('haUrl');
