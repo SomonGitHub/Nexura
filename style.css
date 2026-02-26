@@ -15,7 +15,7 @@
   /* Ambiance Colors */
   --sky-dawn: linear-gradient(135deg, #1A2980 0%, #26D0CE 100%);
   --sky-day: linear-gradient(135deg, #1CB5E0 0%, #000851 100%);
-  --sky-dusk: linear-gradient(135deg, #FF512F 0%, #DD2476 100%);
+  --sky-dusk: linear-gradient(135deg, #2b5876 0%, #4e4376 100%);
   --sky-night: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
 }
 

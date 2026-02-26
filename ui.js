@@ -558,8 +558,8 @@ const UI = {
         let skyClass = 'sky-night';
 
         if (hour >= 6 && hour < 9) skyClass = 'sky-dawn';
-        else if (hour >= 9 && hour < 17) skyClass = 'sky-day';
-        else if (hour >= 17 && hour < 21) skyClass = 'sky-dusk';
+        else if (hour >= 9 && hour < 18) skyClass = 'sky-day';
+        else if (hour >= 18 && hour < 21) skyClass = 'sky-dusk';
 
         // Remove old sky classes and add the new one (preserves ID)
         layer.classList.remove(...skyClasses);
