@@ -264,11 +264,34 @@
             border-color: var(--accent-color) !important;
             box-shadow: 0 0 0 2px var(--accent-glow);
         }
+
+        @media (max-width: 600px) {
+            .setting-item {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1rem;
+            }
+
+            .setting-item>div:last-child {
+                width: 100%;
+                flex-wrap: wrap;
+                gap: 0.5rem !important;
+            }
+
+            .setting-item select {
+                flex: 1;
+                min-width: 120px;
+            }
+        }
     </style>
 </head>
 
 <body>
     <div id="ambiance-layer"></div>
+    <div id="sidebar-overlay"></div>
+    <button class="mobile-menu-btn" id="mobileMenuBtn">
+        <i data-lucide="menu"></i>
+    </button>
     <div class="app-container">
         <!-- Sidebar -->
         <aside class="sidebar" id="sidebar">

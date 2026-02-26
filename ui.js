@@ -579,22 +579,58 @@ const UI = {
         const sidebar = document.getElementById('sidebar');
         const toggleBtn = document.getElementById('toggleSidebar');
         const sidebarIcon = document.getElementById('sidebarIcon');
+        const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+        const sidebarOverlay = document.getElementById('sidebar-overlay');
 
-        if (!sidebar || !toggleBtn) return;
+        if (!sidebar) return;
 
-        // Apply initial state
-        if (localStorage.getItem('sidebar_collapsed') === 'true') {
-            sidebar.classList.add('collapsed');
-            if (sidebarIcon) sidebarIcon.setAttribute('data-lucide', 'chevron-right');
+        // Desktop Toggle
+        if (toggleBtn) {
+            // Apply initial state
+            if (localStorage.getItem('sidebar_collapsed') === 'true') {
+                sidebar.classList.add('collapsed');
+                if (sidebarIcon) sidebarIcon.setAttribute('data-lucide', 'chevron-right');
+            }
+
+            toggleBtn.addEventListener('click', () => {
+                const isCollapsed = sidebar.classList.toggle('collapsed');
+                localStorage.setItem('sidebar_collapsed', isCollapsed);
+                if (sidebarIcon) {
+                    sidebarIcon.setAttribute('data-lucide', isCollapsed ? 'chevron-right' : 'chevron-left');
+                    if (window.lucide) lucide.createIcons();
+                }
+            });
         }
 
-        toggleBtn.addEventListener('click', () => {
-            const isCollapsed = sidebar.classList.toggle('collapsed');
-            localStorage.setItem('sidebar_collapsed', isCollapsed);
-            if (sidebarIcon) {
-                sidebarIcon.setAttribute('data-lucide', isCollapsed ? 'chevron-right' : 'chevron-left');
-                if (window.lucide) lucide.createIcons();
+        // Mobile Toggle logic
+        const toggleMobileMenu = () => {
+            const isActive = sidebar.classList.toggle('mobile-active');
+            if (sidebarOverlay) {
+                sidebarOverlay.classList.toggle('active', isActive);
             }
+        };
+
+        if (mobileMenuBtn) {
+            mobileMenuBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                toggleMobileMenu();
+            });
+        }
+
+        if (sidebarOverlay) {
+            sidebarOverlay.addEventListener('click', () => {
+                sidebar.classList.remove('mobile-active');
+                sidebarOverlay.classList.remove('active');
+            });
+        }
+
+        // Close mobile menu on navigation
+        const navLinks = sidebar.querySelectorAll('a.nav-item');
+        navLinks.forEach(link => {
+            link.addEventListener('click', () => {
+                sidebar.classList.remove('mobile-active');
+                if (sidebarOverlay) sidebarOverlay.classList.remove('active');
+            });
         });
     },
 
@@ -1011,19 +1047,18 @@ const UI = {
 };
 
 
-document.addEventListener('DOMContentLoaded', () => {
-    UI.initPageTransitions();
-    UI.initAmbiance();
-    UI.initEnergyFlow();
-});
-
-
 window.UI = UI;
-// Initialize common UI components
+
 document.addEventListener('DOMContentLoaded', () => {
     if (window.UI) {
         UI.initSidebar();
         UI.initPageTransitions();
         UI.initAmbiance();
+        UI.initEnergyFlow();
+
+        // Final icon creation for custom elements
+        if (window.lucide) {
+            lucide.createIcons();
+        }
     }
 });
