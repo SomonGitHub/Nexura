@@ -105,7 +105,8 @@ const UI = {
             let htmlBuffer = '';
             entities.forEach(entity => {
                 const stateData = allStates.find(s => s.entity_id === entity.haId) || { state: 'unavailable' };
-                htmlBuffer += this.createDeviceCard(entity, stateData, options);
+                const size = entity.size || 'standard';
+                htmlBuffer += this.createDeviceCard(entity, stateData, { ...options, size });
             });
             container.innerHTML = htmlBuffer || `<p style="grid-column: 1/-1; text-align: center; color: var(--text-secondary); padding: 2rem; border: 1px dashed var(--glass-border); border-radius: 12px;">${options.emptyMessage || 'Aucun élément.'}</p>`;
             this.refreshIcons(container);
@@ -117,21 +118,28 @@ const UI = {
             const card = container.children[index];
             if (!card || card.getAttribute('data-ha-id') !== entity.haId) {
                 // Mismatch, fallback to rebuild (should be rare with stable sort)
-                container.innerHTML = entities.map(e => this.createDeviceCard(e, allStates.find(s => s.entity_id === e.haId) || { state: 'unavailable' }, options)).join('');
+                container.innerHTML = entities.map(e => this.createDeviceCard(e, allStates.find(s => s.entity_id === e.haId) || { state: 'unavailable' }, { ...options, size: e.size || 'standard' })).join('');
                 this.refreshIcons(container);
                 return;
             }
 
             const stateData = allStates.find(s => s.entity_id === entity.haId) || (entity.type === 'empty' ? { state: 'Spacer' } : { state: 'unavailable' });
             const isActive = ['on', 'open', 'playing'].includes(stateData.state);
+            const cardSize = entity.size || 'standard';
+            const sizeClass = cardSize !== 'standard' ? `card-${cardSize}` : '';
 
             // 1. Update card classes
             if (entity.type === 'empty') {
-                card.className = `card empty-block clickable`;
+                card.className = `card empty-block clickable ${sizeClass}`;
                 return;
             }
             const isControl = ['light', 'switch', 'shutter'].includes(entity.type);
-            card.className = `card ${isActive ? 'device-on' : ''} ${entity.type} ${isControl ? 'clickable' : ''}`;
+            const alertClasses = this.getAlertClasses(entity, stateData);
+            const canBeInactive = ['binary_sensor', 'sensor', 'temperature', 'humidity'].includes(entity.type) || entity.haId.startsWith('sensor.');
+            const frostEnabled = localStorage.getItem('ef_frost_enabled') !== 'false';
+            const isInactiveClass = (frostEnabled && canBeInactive && !isActive) ? 'is-inactive' : '';
+
+            card.className = `card ${isActive ? 'device-on' : ''} ${entity.type} ${isControl ? 'clickable' : ''} ${alertClasses.join(' ')} ${isInactiveClass} ${sizeClass}`;
 
             // 2. Update Icon color
             const iconContainer = card.querySelector('.device-icon');
@@ -165,15 +173,11 @@ const UI = {
             }
 
             // 4. Update Alert Pulsations & Frost Mode
-            const alertClasses = this.getAlertClasses(entity, stateData);
             card.classList.toggle('alert-pulse', alertClasses.includes('alert-pulse'));
             card.classList.toggle('warning-pulse', alertClasses.includes('warning-pulse'));
 
             // Frost & Focus: Blur if not active
             const isInactive = !isActive && stateData.state !== 'unavailable';
-            // Actions (lights, switches, shutters) should NOT be frosted
-            const canBeInactive = ['binary_sensor', 'sensor'].includes(entity.type) || entity.haId.startsWith('sensor.');
-            const frostEnabled = localStorage.getItem('ef_frost_enabled') !== 'false';
             card.classList.toggle('is-inactive', frostEnabled && canBeInactive && !isActive);
         });
 
@@ -232,12 +236,13 @@ const UI = {
      * Create a standardized device card HTML
      */
     createDeviceCard(entity, stateData, options = {}) {
-        const { showRemove = false, onRemove = '', onClick = '', onAction = 'callHAService' } = options;
+        const { showRemove = false, onRemove = '', onClick = '', onAction = 'callHAService', size = 'standard' } = options;
 
         if (entity.type === 'empty') {
             const onRemoveFinal = onRemove ? onRemove.replace(/\${haId}/g, entity.haId) : '';
+            const sizeClass = size !== 'standard' ? `card-${size}` : '';
             return `
-                <div class="card empty-block clickable" data-ha-id="${entity.haId}" style="position: relative; border: 1px dashed var(--glass-border); background: rgba(255,255,255,0.01); display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100px;">
+                <div class="card empty-block clickable ${sizeClass}" data-ha-id="${entity.haId}" style="position: relative; border: 1px dashed var(--glass-border); background: rgba(255,255,255,0.01); display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100px;">
                     ${showRemove ? `
                         <button onclick="${onRemoveFinal}; event.stopPropagation();" style="position: absolute; top: 6px; right: 6px; background: none; border: none; color: var(--text-secondary); cursor: pointer; opacity: 0.5; z-index: 2;">
                             <i data-lucide="x" style="width: 12px;"></i>
@@ -303,8 +308,9 @@ const UI = {
         const canBeInactive = ['binary_sensor', 'sensor', 'temperature', 'humidity'].includes(entity.type) || entity.haId.startsWith('sensor.');
         const frostEnabled = localStorage.getItem('ef_frost_enabled') !== 'false';
         const isInactiveClass = (frostEnabled && canBeInactive && !isActive) ? 'is-inactive' : '';
+        const sizeClass = size !== 'standard' ? `card-${size}` : '';
 
-        const cardClass = `card ${isActive ? 'device-on' : ''} ${entity.type} ${isControl ? 'clickable' : ''} ${isDimmer ? 'variant-dimmer' : ''} ${alertClasses.join(' ')} ${isInactiveClass}`;
+        const cardClass = `card ${isActive ? 'device-on' : ''} ${entity.type} ${isControl ? 'clickable' : ''} ${isDimmer ? 'variant-dimmer' : ''} ${alertClasses.join(' ')} ${isInactiveClass} ${sizeClass}`;
         const iconColor = isActive ? 'var(--accent-color)' : 'var(--text-secondary)';
 
 

@@ -396,6 +396,13 @@ CREATE POLICY "Users can manage their entities" ON public.entities FOR ALL USING
         const url = localStorage.getItem('haUrl');
         const token = localStorage.getItem('haToken');
         let dashboardCards = JSON.parse(localStorage.getItem('dashboard_cards')) || [];
+
+        // Migration: convert string IDs to objects { id, size }
+        if (dashboardCards.length > 0 && typeof dashboardCards[0] === 'string') {
+            dashboardCards = dashboardCards.map(id => ({ id, size: 'standard' }));
+            localStorage.setItem('dashboard_cards', JSON.stringify(dashboardCards));
+        }
+
         let isRefreshing = false;
 
         // --- Energy Chart Logic ---
@@ -477,7 +484,10 @@ CREATE POLICY "Users can manage their entities" ON public.entities FOR ALL USING
             animation: 150,
             ghostClass: 'sortable-ghost',
             onEnd: function () {
-                const newOrder = Array.from(dynamicCardsGrid.children).map(child => child.getAttribute('data-ha-id'));
+                const newOrder = Array.from(dynamicCardsGrid.children).map(child => ({
+                    id: child.getAttribute('data-ha-id'),
+                    size: child.getAttribute('data-card-size') || 'standard'
+                }));
                 dashboardCards = newOrder;
                 localStorage.setItem('dashboard_cards', JSON.stringify(dashboardCards));
                 if (window.syncToCloud) window.syncToCloud();
@@ -625,11 +635,16 @@ CREATE POLICY "Users can manage their entities" ON public.entities FOR ALL USING
                 }
 
                 // SMART UPDATE for Dashboard Cards
-                const dashboardEntities = dashboardCards.map(haId => {
+                const dashboardEntities = dashboardCards.map(cardObj => {
+                    const haId = cardObj.id;
+                    const size = cardObj.size || 'standard';
+
                     if (haId.startsWith('empty_block_')) {
-                        return { haId, name: 'Bloc vide', type: 'empty' };
+                        return { haId, name: 'Bloc vide', type: 'empty', size };
                     }
-                    return managedEntities.find(e => e.haId === haId);
+                    const entity = managedEntities.find(e => e.haId === haId);
+                    if (entity) return { ...entity, size };
+                    return null;
                 }).filter(Boolean);
 
                 UI.smartUpdateGrid('dynamicCardsGrid', dashboardEntities, allStates, {
@@ -800,7 +815,7 @@ CREATE POLICY "Users can manage their entities" ON public.entities FOR ALL USING
         }
 
         window.removeCard = function (haId) {
-            dashboardCards = dashboardCards.filter(id => id !== haId);
+            dashboardCards = dashboardCards.filter(card => card.id !== haId);
             localStorage.setItem('dashboard_cards', JSON.stringify(dashboardCards));
             refreshDashboard();
             if (window.syncToCloud) window.syncToCloud();
@@ -815,44 +830,66 @@ CREATE POLICY "Users can manage their entities" ON public.entities FOR ALL USING
             const emptyBlockItem = document.createElement('div');
             emptyBlockItem.className = 'card';
             emptyBlockItem.style.marginBottom = '0.5rem';
-            emptyBlockItem.style.cursor = 'pointer';
             emptyBlockItem.style.display = 'flex';
-            emptyBlockItem.style.justifyContent = 'space-between';
-            emptyBlockItem.style.alignItems = 'center';
+            emptyBlockItem.style.flexDirection = 'column';
+            emptyBlockItem.style.gap = '1rem';
             emptyBlockItem.style.border = '1px dashed var(--accent-color)';
             emptyBlockItem.innerHTML = `
-                <div>
-                    <h4 style="margin: 0; font-size: 0.85rem; color: var(--accent-color);">+ Bloc vide</h4>
-                    <p style="margin: 0; font-size: 0.65rem; color: var(--text-secondary);">Ajouter un espaceur</p>
+                <div style="display: flex; justify-content: space-between; align-items: center; cursor: pointer;" onclick="this.parentElement.querySelector('.size-selector').style.display = this.parentElement.querySelector('.size-selector').style.display === 'flex' ? 'none' : 'flex'">
+                    <div>
+                        <h4 style="margin: 0; font-size: 0.85rem; color: var(--accent-color);">+ Bloc vide</h4>
+                        <p style="margin: 0; font-size: 0.65rem; color: var(--text-secondary);">Ajouter un espaceur</p>
+                    </div>
+                    <i data-lucide="square-dashed" style="width: 16px; color: var(--accent-color)"></i>
                 </div>
-                <i data-lucide="square-dashed" style="width: 16px; color: var(--accent-color)"></i>
+                <div class="size-selector" style="display: none; gap: 0.5rem; flex-wrap: wrap; padding-top: 0.5rem; border-top: 1px solid var(--glass-border);">
+                    <button class="filter-btn" style="padding: 2px 8px; font-size: 0.7rem;" onclick="addEmptyBlock('small')">Petit</button>
+                    <button class="filter-btn active" style="padding: 2px 8px; font-size: 0.7rem;" onclick="addEmptyBlock('standard')">Carré</button>
+                    <button class="filter-btn" style="padding: 2px 8px; font-size: 0.7rem;" onclick="addEmptyBlock('wide')">Large</button>
+                    <button class="filter-btn" style="padding: 2px 8px; font-size: 0.7rem;" onclick="addEmptyBlock('tall')">Haut</button>
+                    <button class="filter-btn" style="padding: 2px 8px; font-size: 0.7rem;" onclick="addEmptyBlock('large')">XXL</button>
+                </div>
             `;
-            emptyBlockItem.onclick = () => {
+
+            window.addEmptyBlock = (size) => {
                 const virtualId = `empty_block_${Date.now()}`;
-                dashboardCards.push(virtualId);
+                dashboardCards.push({ id: virtualId, size });
                 localStorage.setItem('dashboard_cards', JSON.stringify(dashboardCards));
                 addCardModal.style.display = 'none';
                 refreshDashboard();
                 if (window.syncToCloud) window.syncToCloud();
             };
+
             entitySelectionList.appendChild(emptyBlockItem);
 
             controllable.forEach(e => {
+                const isAlreadyIn = dashboardCards.some(card => card.id === e.haId);
                 const item = document.createElement('div');
                 item.className = 'card';
                 item.style.marginBottom = '0.5rem';
-                item.style.cursor = 'pointer';
                 item.style.display = 'flex';
-                item.style.justifyContent = 'space-between';
-                item.style.alignItems = 'center';
+                item.style.flexDirection = 'column';
+                item.style.gap = '1rem';
                 item.innerHTML = `
-                    <div>
-                        <h4 style="margin: 0; font-size: 0.85rem;">${e.name}</h4>
-                        <p style="margin: 0; font-size: 0.65rem; color: var(--text-secondary);">${e.haId}</p>
+                    <div style="display: flex; justify-content: space-between; align-items: center; cursor: pointer;" onclick="this.parentElement.querySelector('.size-selector').style.display = this.parentElement.querySelector('.size-selector').style.display === 'flex' ? 'none' : 'flex'">
+                        <div>
+                            <h4 style="margin: 0; font-size: 0.85rem;">${e.name}</h4>
+                            <p style="margin: 0; font-size: 0.65rem; color: var(--text-secondary);">${e.haId}</p>
+                        </div>
+                        <i data-lucide="${isAlreadyIn ? 'check-circle' : 'circle'}" style="width: 16px; color: ${isAlreadyIn ? 'var(--accent-color)' : 'var(--text-secondary)'}"></i>
                     </div>
-                    <i data-lucide="${dashboardCards.includes(e.haId) ? 'check-circle' : 'circle'}" style="width: 16px; color: ${dashboardCards.includes(e.haId) ? 'var(--accent-color)' : 'var(--text-secondary)'}"></i>
+                    <div class="size-selector" style="display: none; gap: 0.5rem; flex-wrap: wrap; padding-top: 0.5rem; border-top: 1px solid var(--glass-border);">
+                         ${isAlreadyIn ? `
+                            <button class="filter-btn active" style="padding: 2px 8px; font-size: 0.7rem; background: #ef4444;" onclick="toggleDashboardCard('${e.haId}', 'remove')">Retirer</button>
+                         ` : `
+                            <button class="filter-btn" style="padding: 2px 8px; font-size: 0.7rem;" onclick="toggleDashboardCard('${e.haId}', 'small')">Petit</button>
+                            <button class="filter-btn active" style="padding: 2px 8px; font-size: 0.7rem;" onclick="toggleDashboardCard('${e.haId}', 'standard')">Carré</button>
+                            <button class="filter-btn" style="padding: 2px 8px; font-size: 0.7rem;" onclick="toggleDashboardCard('${e.haId}', 'wide')">Large</button>
+                            <button class="filter-btn" style="padding: 2px 8px; font-size: 0.7rem;" onclick="toggleDashboardCard('${e.haId}', 'tall')">Haut</button>
+                            <button class="filter-btn" style="padding: 2px 8px; font-size: 0.7rem;" onclick="toggleDashboardCard('${e.haId}', 'large')">XXL</button>
+                         `}
+                    </div>
                 `;
-                item.onclick = () => toggleDashboardCard(e.haId);
                 entitySelectionList.appendChild(item);
             });
 
@@ -860,11 +897,13 @@ CREATE POLICY "Users can manage their entities" ON public.entities FOR ALL USING
             UI.refreshIcons(entitySelectionList);
         });
 
-        function toggleDashboardCard(haId) {
-            if (dashboardCards.includes(haId)) {
-                dashboardCards = dashboardCards.filter(id => id !== haId);
+        function toggleDashboardCard(haId, size) {
+            if (size === 'remove') {
+                dashboardCards = dashboardCards.filter(card => card.id !== haId);
             } else {
-                dashboardCards.push(haId);
+                // If already exists, remove it first to "update" or just toggle
+                dashboardCards = dashboardCards.filter(card => card.id !== haId);
+                dashboardCards.push({ id: haId, size });
             }
             localStorage.setItem('dashboard_cards', JSON.stringify(dashboardCards));
             addCardModal.style.display = 'none';

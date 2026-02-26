@@ -456,7 +456,46 @@ body {
   min-height: 90px;
   transition: all 0.3s cubic-bezier(0.19, 1, 0.22, 1);
   grid-column: span 4;
+}
 
+/* Card Size Variations */
+.card-small {
+  grid-column: span 2 !important;
+  /* 80px */
+  min-height: 80px !important;
+  padding: 0.6rem !important;
+}
+
+.card-small .device-icon {
+  width: 20px !important;
+  height: 20px !important;
+}
+
+.card-small h3 {
+  font-size: 0.75rem !important;
+}
+
+.card-small .state-text {
+  font-size: 0.65rem !important;
+}
+
+.card-wide {
+  grid-column: span 8 !important;
+  /* 320px */
+}
+
+.card-tall {
+  grid-row: span 2 !important;
+  min-height: 190px !important;
+}
+
+.card-large {
+  grid-column: span 8 !important;
+  grid-row: span 2 !important;
+  min-height: 190px !important;
+}
+
+.card {
   /* Relief Effects */
   box-shadow:
     0 4px 15px rgba(0, 0, 0, 0.2),
