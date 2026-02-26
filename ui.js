@@ -128,6 +128,8 @@ const UI = {
             const cardSize = entity.size || 'standard';
             const sizeClass = cardSize !== 'standard' ? `card-${cardSize}` : '';
 
+            card.dataset.cardSize = cardSize;
+
             // 1. Update card classes
             if (entity.type === 'empty') {
                 card.className = `card empty-block clickable ${sizeClass}`;
@@ -242,7 +244,7 @@ const UI = {
             const onRemoveFinal = onRemove ? onRemove.replace(/\${haId}/g, entity.haId) : '';
             const sizeClass = size !== 'standard' ? `card-${size}` : '';
             return `
-                <div class="card empty-block clickable ${sizeClass}" data-ha-id="${entity.haId}" style="position: relative; border: 1px dashed var(--glass-border); background: rgba(255,255,255,0.01); display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100px;">
+                <div class="card empty-block clickable ${sizeClass}" data-ha-id="${entity.haId}" data-card-size="${size}" style="position: relative; border: 1px dashed var(--glass-border); background: rgba(255,255,255,0.01); display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100px;">
                     ${showRemove ? `
                         <button onclick="${onRemoveFinal}; event.stopPropagation();" style="position: absolute; top: 6px; right: 6px; background: none; border: none; color: var(--text-secondary); cursor: pointer; opacity: 0.5; z-index: 2;">
                             <i data-lucide="x" style="width: 12px;"></i>
@@ -325,7 +327,7 @@ const UI = {
         }
 
         return `
-            <div class="${cardClass}" data-ha-id="${entity.haId}" style="position: relative;" ${isControl && onClickFinal ? `onclick="${onClickFinal}"` : ''}>
+            <div class="${cardClass}" data-ha-id="${entity.haId}" data-card-size="${size}" style="position: relative;" ${isControl && onClickFinal ? `onclick="${onClickFinal}"` : ''}>
                 ${showRemove ? `
                     <button onclick="${onRemoveFinal}; event.stopPropagation();" style="position: absolute; top: 6px; right: 6px; background: none; border: none; color: var(--text-secondary); cursor: pointer; opacity: 0.5; z-index: 2;">
                         <i data-lucide="x" style="width: 12px;"></i>
