@@ -610,18 +610,26 @@ CREATE POLICY "Users can manage their entities" ON public.entities FOR ALL USING
                 document.getElementById('kpiShutters').style.display = hasShutters ? 'flex' : 'none';
 
                 // Weather Status (Discrete - Top Right)
-                const weatherEntity = allStates.find(s => s.entity_id.startsWith('weather.'));
+                let weatherEntity = allStates.find(s => s.entity_id.startsWith('weather.'));
+                if (!weatherEntity) {
+                    weatherEntity = allStates.find(s => s.attributes?.device_class === 'weather');
+                }
+
                 const weatherStatusEl = document.getElementById('weather-status');
+                if (weatherEntity) console.info("[Weather Debug] Found:", weatherEntity.entity_id, "State:", weatherEntity.state);
+                else console.warn("[Weather Debug] No weather entity detected.");
+
                 if (weatherEntity && weatherStatusEl) {
                     weatherStatusEl.style.display = 'flex';
                     const currentTemp = Math.round(weatherEntity.attributes.temperature || 0);
                     const condition = weatherEntity.state;
 
-                    // Forecast for min/max
+                    // Forecast: Handle both 'forecast' attribute and potential missing data
                     let minTemp = '--';
                     let maxTemp = '--';
-                    if (weatherEntity.attributes.forecast && weatherEntity.attributes.forecast.length > 0) {
-                        const today = weatherEntity.attributes.forecast[0];
+                    const forecast = weatherEntity.attributes.forecast;
+                    if (Array.isArray(forecast) && forecast.length > 0) {
+                        const today = forecast[0];
                         minTemp = today.templow !== undefined ? Math.round(today.templow) : '--';
                         maxTemp = today.temperature !== undefined ? Math.round(today.temperature) : '--';
                     }
@@ -631,7 +639,7 @@ CREATE POLICY "Users can manage their entities" ON public.entities FOR ALL USING
 
                     const iconEl = document.getElementById('weather-icon');
                     const newIcon = UI.getWeatherIcon(condition);
-                    if (iconEl.getAttribute('data-lucide') !== newIcon) {
+                    if (iconEl && iconEl.getAttribute('data-lucide') !== newIcon) {
                         iconEl.setAttribute('data-lucide', newIcon);
                         UI.refreshIcons(iconEl.parentElement);
                     }

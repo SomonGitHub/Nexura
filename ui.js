@@ -55,7 +55,7 @@ const UI = {
         // Binary Sensors (Doors, Windows, Motion)
         if (entity.type === 'binary_sensor') {
             if (variant === 'presence' || devClass === 'motion' || devClass === 'occupancy') {
-                return 'unfold-more';
+                return 'chevrons-up-down';
             } else if (variant === 'door' || devClass === 'door') {
                 return isActive ? 'door-open' : 'door-closed';
             } else if (variant === 'window' || devClass === 'window') {
