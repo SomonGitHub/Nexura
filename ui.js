@@ -191,7 +191,9 @@ const UI = {
                 const size = entity.size || 'standard';
                 const tempDiv = document.createElement('div');
                 tempDiv.innerHTML = this.createDeviceCard(entity, stateData, { ...options, size });
-                if (tempDiv.firstElementChild) fragment.appendChild(tempDiv.firstElementChild);
+                while (tempDiv.firstChild) {
+                    fragment.appendChild(tempDiv.firstChild);
+                }
             });
 
             if (entities.length === 0) {
@@ -214,7 +216,9 @@ const UI = {
                 entities.forEach(e => {
                     const tempDiv = document.createElement('div');
                     tempDiv.innerHTML = this.createDeviceCard(e, allStates.find(s => s.entity_id === e.haId) || { state: 'unavailable' }, { ...options, size: e.size || 'standard' });
-                    if (tempDiv.firstElementChild) fragment.appendChild(tempDiv.firstElementChild);
+                    while (tempDiv.firstChild) {
+                        fragment.appendChild(tempDiv.firstChild);
+                    }
                 });
                 container.innerHTML = '';
                 container.appendChild(fragment);
