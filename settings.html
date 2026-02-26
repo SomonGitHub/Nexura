@@ -1312,19 +1312,23 @@
                 scanPromises.push((async () => {
                     try {
                         const template = `
-                            [
-                            {% set domains = ['light', 'switch', 'cover', 'climate', 'binary_sensor', 'sensor', 'camera'] %}
-                            {% for domain in domains %}
-                                {% for state in states[domain] %}
-                                {
-                                "entity_id": {{ state.entity_id | tojson }},
-                                "area_name": {{ area_name(state.entity_id) | default("") | tojson }},
-                                "friendly_name": {{ state.attributes.friendly_name | default(state.entity_id) | tojson }},
-                                "source": "ha"
-                                }{{ "," if not loop.last or not loop.parentloop.last }}
-                                {% endfor %}
-                            {% endfor %}
-                            ]`.trim().replace(/,(\s*\])/g, '$1');
+                            {%- set domains = ['light', 'switch', 'cover', 'climate', 'binary_sensor', 'sensor', 'camera'] -%}
+                            {%- set ns = namespace(entities=[]) -%}
+                            {%- for domain in domains -%}
+                                {%- if states[domain] -%}
+                                    {%- for state in states[domain] -%}
+                                        {%- set area = area_name(state.entity_id) -%}
+                                        {%- set _ = ns.entities.append({
+                                            "entity_id": state.entity_id,
+                                            "area_name": area if area else "",
+                                            "friendly_name": state.name,
+                                            "source": "ha"
+                                        }) -%}
+                                    {%- endfor -%}
+                                {%- endif -%}
+                            {%- endfor -%}
+                            {{ ns.entities | tojson }}
+                        `.trim();
 
                         const response = await fetch(`${haUrl}/api/template`, {
                             method: 'POST',
