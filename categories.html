@@ -43,6 +43,7 @@
 </head>
 
 <body>
+    <div id="ambiance-layer"></div>
     <div class="app-container">
         <!-- Sidebar -->
         <aside class="sidebar" id="sidebar">
@@ -227,7 +228,10 @@
         }
 
         // Initial fetch
-        document.addEventListener('DOMContentLoaded', fetchCategoryStates);
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchCategoryStates();
+            UI.initAmbiance();
+        });
         UI.setInterval('category_refresh', fetchCategoryStates, 5000);
     </script>
     <script src="nexura-auth.js"></script>

@@ -243,6 +243,7 @@
 </head>
 
 <body>
+    <div id="ambiance-layer"></div>
     <div class="app-container">
         <!-- Sidebar -->
         <aside class="sidebar" id="sidebar">
@@ -680,14 +681,16 @@
     </div>
 
 
+    <script src="ui.js"></script>
     <script src="nexura-auth.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            lucide.createIcons();
+            if (window.lucide) lucide.createIcons();
             loadHASettings();
             loadTuyaSettings();
             loadXiaomiSettings();
             loadVisualSettings();
+            if (window.UI) UI.initAmbiance();
         });
 
         function saveVisualSettings() {

@@ -19,6 +19,7 @@
 </head>
 
 <body>
+    <div id="ambiance-layer"></div>
     <div class="app-container">
         <!-- Sidebar -->
         <aside class="sidebar" id="sidebar">
@@ -279,6 +280,7 @@
 
         fetchRoomStates();
         UI.setInterval('room_refresh', fetchRoomStates, 5000);
+        UI.initAmbiance();
 
         const sidebar = document.getElementById('sidebar');
         const toggleBtn = document.getElementById('toggleSidebar');
