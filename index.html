@@ -186,7 +186,8 @@
                     <section>
                         <h2 style="margin-bottom: 1.5rem; font-size: 1rem;">Pièces</h2>
                         <div class="rooms-scroll-container">
-                            <div id="roomCardsGrid" class="kpi-grid">
+                            <div id="roomCardsGrid"
+                                style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.5rem;">
                                 <!-- Skeletons will be injected here via UI.showSkeletons -->
                             </div>
                         </div>
@@ -919,20 +920,26 @@ CREATE POLICY "Users can manage their entities" ON public.entities FOR ALL USING
             if (window.syncToCloud) window.syncToCloud();
         };
 
-        openAddCardBtn.addEventListener('click', () => {
-            entitySelectionList.innerHTML = ''; // Clear duplicates
-            const managedEntities = JSON.parse(localStorage.getItem('domotique_entities')) || [];
-            const controllable = managedEntities.filter(e => ['light', 'shutter', 'switch', 'climate', 'sensor', 'binary_sensor', 'camera', 'temperature', 'humidity', 'energy', 'battery'].includes(e.type));
+        const addCardBtn = document.getElementById('openAddCardBtn');
+        const entitySelectionList = document.getElementById('entitySelectionList');
+        const addCardModal = document.getElementById('addCardModal');
+        const closeModal = document.getElementById('closeModal');
 
-            // Prepend Empty Block option
-            const emptyBlockItem = document.createElement('div');
-            emptyBlockItem.className = 'card';
-            emptyBlockItem.style.marginBottom = '0.5rem';
-            emptyBlockItem.style.display = 'flex';
-            emptyBlockItem.style.flexDirection = 'column';
-            emptyBlockItem.style.gap = '1rem';
-            emptyBlockItem.style.border = '1px dashed var(--accent-color)';
-            emptyBlockItem.innerHTML = `
+        if (addCardBtn) {
+            addCardBtn.addEventListener('click', () => {
+                entitySelectionList.innerHTML = ''; // Clear duplicates
+                const managedEntities = JSON.parse(localStorage.getItem('domotique_entities')) || [];
+                const controllable = managedEntities.filter(e => ['light', 'shutter', 'switch', 'climate', 'sensor', 'binary_sensor', 'camera', 'temperature', 'humidity', 'energy', 'battery'].includes(e.type));
+
+                // Prepend Empty Block option
+                const emptyBlockItem = document.createElement('div');
+                emptyBlockItem.className = 'card';
+                emptyBlockItem.style.marginBottom = '0.5rem';
+                emptyBlockItem.style.display = 'flex';
+                emptyBlockItem.style.flexDirection = 'column';
+                emptyBlockItem.style.gap = '1rem';
+                emptyBlockItem.style.border = '1px dashed var(--accent-color)';
+                emptyBlockItem.innerHTML = `
                 <div style="display: flex; justify-content: space-between; align-items: center; cursor: pointer;" onclick="this.parentElement.querySelector('.size-selector').style.display = this.parentElement.querySelector('.size-selector').style.display === 'flex' ? 'none' : 'flex'">
                     <div>
                         <h4 style="margin: 0; font-size: 0.85rem; color: var(--accent-color);">+ Bloc vide</h4>
@@ -949,26 +956,26 @@ CREATE POLICY "Users can manage their entities" ON public.entities FOR ALL USING
                 </div>
             `;
 
-            window.addEmptyBlock = (size) => {
-                const virtualId = `empty_block_${Date.now()}`;
-                dashboardCards.push({ id: virtualId, size });
-                localStorage.setItem('dashboard_cards', JSON.stringify(dashboardCards));
-                addCardModal.style.display = 'none';
-                refreshDashboard();
-                if (window.syncToCloud) window.syncToCloud();
-            };
+                window.addEmptyBlock = (size) => {
+                    const virtualId = `empty_block_${Date.now()}`;
+                    dashboardCards.push({ id: virtualId, size });
+                    localStorage.setItem('dashboard_cards', JSON.stringify(dashboardCards));
+                    addCardModal.style.display = 'none';
+                    refreshDashboard();
+                    if (window.syncToCloud) window.syncToCloud();
+                };
 
-            entitySelectionList.appendChild(emptyBlockItem);
+                entitySelectionList.appendChild(emptyBlockItem);
 
-            controllable.forEach(e => {
-                const isAlreadyIn = dashboardCards.some(card => card.id === e.haId);
-                const item = document.createElement('div');
-                item.className = 'card';
-                item.style.marginBottom = '0.5rem';
-                item.style.display = 'flex';
-                item.style.flexDirection = 'column';
-                item.style.gap = '1rem';
-                item.innerHTML = `
+                controllable.forEach(e => {
+                    const isAlreadyIn = dashboardCards.some(card => card.id === e.haId);
+                    const item = document.createElement('div');
+                    item.className = 'card';
+                    item.style.marginBottom = '0.5rem';
+                    item.style.display = 'flex';
+                    item.style.flexDirection = 'column';
+                    item.style.gap = '1rem';
+                    item.innerHTML = `
                     <div style="display: flex; justify-content: space-between; align-items: center; cursor: pointer;" onclick="this.parentElement.querySelector('.size-selector').style.display = this.parentElement.querySelector('.size-selector').style.display === 'flex' ? 'none' : 'flex'">
                         <div>
                             <h4 style="margin: 0; font-size: 0.85rem;">${e.name}</h4>
@@ -988,12 +995,13 @@ CREATE POLICY "Users can manage their entities" ON public.entities FOR ALL USING
                          `}
                     </div>
                 `;
-                entitySelectionList.appendChild(item);
-            });
+                    entitySelectionList.appendChild(item);
+                });
 
-            addCardModal.style.display = 'flex';
-            UI.refreshIcons(entitySelectionList);
-        });
+                addCardModal.style.display = 'flex';
+                UI.refreshIcons(entitySelectionList);
+            });
+        }
 
         function toggleDashboardCard(haId, size) {
             if (size === 'remove') {
@@ -1009,8 +1017,10 @@ CREATE POLICY "Users can manage their entities" ON public.entities FOR ALL USING
             if (window.syncToCloud) window.syncToCloud();
         }
 
-        closeModal.onclick = () => addCardModal.style.display = 'none';
-        window.onclick = (e) => { if (e.target === addCardModal) addCardModal.style.display = 'none'; };
+        if (closeModal) {
+            closeModal.onclick = () => addCardModal.style.display = 'none';
+        }
+        window.onclick = (e) => { if (addCardModal && e.target === addCardModal) addCardModal.style.display = 'none'; };
 
         fetchEnergyData();
         refreshDashboard();
