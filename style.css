@@ -474,9 +474,8 @@ body {
 
 /* Frost & Focus - Minimaliste Intelligent */
 .card.is-inactive {
-  filter: blur(2px) grayscale(0.5) opacity(0.6);
-  pointer-events: none;
-  /* Discret, ne réagit plus aux clics si inactif */
+  filter: blur(2px) grayscale(0.2) opacity(0.7);
+  cursor: pointer;
 }
 
 .card.is-inactive:hover {

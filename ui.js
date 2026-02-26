@@ -170,9 +170,9 @@ const UI = {
             card.classList.toggle('warning-pulse', alertClasses.includes('warning-pulse'));
 
             // Frost & Focus: Blur if not active
-            const isInactive = !isActive && stateData.state !== 'unavailable'; // Sensors are usually always 'active' in terms of display
-            // Actually, for sensors, we want them shown. Let's refine:
-            const canBeInactive = ['light', 'switch', 'shutter', 'binary_sensor'].includes(entity.type);
+            const isInactive = !isActive && stateData.state !== 'unavailable';
+            // Actions (lights, switches, shutters) should NOT be frosted
+            const canBeInactive = ['binary_sensor', 'sensor', 'temperature', 'humidity'].includes(entity.type) || entity.haId.startsWith('sensor.');
             card.classList.toggle('is-inactive', canBeInactive && !isActive);
         });
 
@@ -298,7 +298,8 @@ const UI = {
         }
 
         const alertClasses = this.getAlertClasses(entity, stateData);
-        const canBeInactive = ['light', 'switch', 'shutter', 'binary_sensor'].includes(entity.type);
+        // Actions (lights, switches, shutters) should NOT be frosted
+        const canBeInactive = ['binary_sensor', 'sensor', 'temperature', 'humidity'].includes(entity.type) || entity.haId.startsWith('sensor.');
         const isInactiveClass = (canBeInactive && !isActive) ? 'is-inactive' : '';
 
         const cardClass = `card ${isActive ? 'device-on' : ''} ${entity.type} ${isControl ? 'clickable' : ''} ${isDimmer ? 'variant-dimmer' : ''} ${alertClasses.join(' ')} ${isInactiveClass}`;
@@ -426,6 +427,16 @@ const UI = {
                 });
             }
         });
+
+        // Frost & Focus: Click to reveal
+        document.addEventListener('click', (e) => {
+            const card = e.target.closest('.card.is-inactive');
+            if (card) {
+                card.classList.remove('is-inactive');
+                e.preventDefault();
+                e.stopPropagation();
+            }
+        }, true);
     },
 
     initAmbiance() {
