@@ -610,7 +610,10 @@ CREATE POLICY "Users can manage their entities" ON public.entities FOR ALL USING
                 const hasEnergy = managedEntities.some(e => e.type === 'energy') || !!localStorage.getItem('haEntityEnergy');
                 const hasLights = managedEntities.some(e => e.type === 'light');
                 const hasShutters = managedEntities.some(e => e.type === 'shutter');
-                const hasOpenings = managedEntities.some(e => ['door', 'window', 'opening'].includes(e.type));
+                const hasOpenings = managedEntities.some(e =>
+                    ['door', 'window', 'opening', 'porte', 'fenetre'].includes(e.type) ||
+                    ['door', 'window', 'opening', 'porte', 'fenetre'].includes(e.variant)
+                );
 
                 document.getElementById('kpiEnergy').style.display = hasEnergy ? 'flex' : 'none';
                 document.getElementById('kpiLights').style.display = hasLights ? 'flex' : 'none';
@@ -685,7 +688,10 @@ CREATE POLICY "Users can manage their entities" ON public.entities FOR ALL USING
                 }
 
                 if (hasOpenings) {
-                    const openings = managedEntities.filter(e => ['door', 'window', 'opening'].includes(e.type));
+                    const openings = managedEntities.filter(e =>
+                        ['door', 'window', 'opening', 'porte', 'fenetre'].includes(e.type) ||
+                        ['door', 'window', 'opening', 'porte', 'fenetre'].includes(e.variant)
+                    );
                     const currentlyOpen = openings.filter(o => {
                         const s = allStates.find(st => st.entity_id === o.haId);
                         return s && (s.state === 'on' || s.state === 'open');
