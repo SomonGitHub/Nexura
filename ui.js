@@ -727,15 +727,15 @@ const UI = {
         if (energyCard && energyCard.style.display !== 'none' && energyCard.offsetHeight > 0) {
             this._ef.energySourceRect = energyCard.getBoundingClientRect();
         } else {
-            // Fallback: Use the Nexura Logo in the sidebar as the source of "Nexura Energy"
             const logo = document.querySelector('.logo-container');
             if (logo) this._ef.energySourceRect = logo.getBoundingClientRect();
         }
 
         // 2. Find active target cards (on devices)
         let activeCards = document.querySelectorAll('.card.device-on:not(.kpi-card)');
-
-        // Fallback: If no devices are on, target the Room Cards to show "House Vitality"
+        if (activeCards.length === 0) {
+            activeCards = document.querySelectorAll('.card.clickable'); // Target any clickable card as second fallback
+        }
         if (activeCards.length === 0) {
             activeCards = document.querySelectorAll('#roomCardsGrid .card');
         }
@@ -746,27 +746,9 @@ const UI = {
         const energyState = allStates?.find(s => s.entity_id === 'sensor.energy_consumption' || s.attributes?.device_class === 'energy');
         if (energyState) {
             const val = parseFloat(energyState.state) || 0;
-            this._ef.speedMultiplier = Math.min(Math.max(val / 500, 0.5), 5); // From 0.5x to 5x speed
+            this._ef.speedMultiplier = Math.min(Math.max(val / 500, 0.5), 5);
         } else {
-            this._ef.speedMultiplier = 1; // Default speed if no sensor
-        }
-
-        // 4. Spawn particles if we have source and targets
-        if (this._ef.energySourceRect && this._ef.targets.length > 0 && this._ef.particles.length < 50) {
-            // Slightly lower spawn rate if using fallbacks to keep it elegant
-            const spawnRate = (activeCards[0]?.id === 'roomCardsGrid' ? 0.05 : 0.1);
-            if (Math.random() < spawnRate * this._ef.speedMultiplier) {
-                const target = this._ef.targets[Math.floor(Math.random() * this._ef.targets.length)];
-                this._ef.particles.push({
-                    x: this._ef.energySourceRect.left + this._ef.energySourceRect.width / 2,
-                    y: this._ef.energySourceRect.top + this._ef.energySourceRect.height / 2,
-                    targetX: target.left + target.width / 2,
-                    targetY: target.top + target.height / 2,
-                    progress: 0,
-                    speed: 0.005 * (0.8 + Math.random() * 0.4) * this._ef.speedMultiplier,
-                    size: 2 + Math.random() * 2
-                });
-            }
+            this._ef.speedMultiplier = 1;
         }
     },
 
@@ -776,26 +758,60 @@ const UI = {
         const ctx = this._ef.ctx;
         ctx.clearRect(0, 0, this._ef.canvas.width, this._ef.canvas.height);
 
+        // 1. Spawn particles (Frame-based spawning for continuous flow)
+        if (this._ef.energySourceRect && this._ef.targets.length > 0 && this._ef.particles.length < 100) {
+            // Adjust spawn probability based on speed multiplier
+            const spawnProb = 0.05 * this._ef.speedMultiplier;
+            if (Math.random() < spawnProb) {
+                const target = this._ef.targets[Math.floor(Math.random() * this._ef.targets.length)];
+                this._ef.particles.push({
+                    x: this._ef.energySourceRect.left + this._ef.energySourceRect.width / 2,
+                    y: this._ef.energySourceRect.top + this._ef.energySourceRect.height / 2,
+                    targetX: target.left + target.width / 2,
+                    targetY: target.top + target.height / 2,
+                    progress: 0,
+                    speed: 0.004 * (0.8 + Math.random() * 0.4) * this._ef.speedMultiplier,
+                    size: 1.5 + Math.random() * 2,
+                    wave: Math.random() * Math.PI * 2
+                });
+            }
+        }
+
+        // 2. Update and Draw
         this._ef.particles = this._ef.particles.filter(p => {
             p.progress += p.speed;
             if (p.progress >= 1) return false;
 
-            // Draw particle
             const x = p.x + (p.targetX - p.x) * p.progress;
             const y = p.y + (p.targetY - p.y) * p.progress;
 
-            // Add a little wave effect
-            const curve = Math.sin(p.progress * Math.PI) * 20;
-            const finalX = x + curve * (p.targetY - p.y) / 500;
-            const finalY = y - curve * (p.targetX - p.x) / 500;
+            // Wave effect calculation
+            const waveAmplitude = 15;
+            const waveFreq = 2;
+            const curve = Math.sin(p.progress * Math.PI * waveFreq + p.wave) * waveAmplitude * (1 - p.progress);
 
-            const gradient = ctx.createRadialGradient(finalX, finalY, 0, finalX, finalY, p.size * 2);
-            gradient.addColorStop(0, 'rgba(108, 193, 189, 0.8)');
+            // Perpendicular offset for organic movement
+            const dx = p.targetX - p.x;
+            const dy = p.targetY - p.y;
+            const len = Math.sqrt(dx * dx + dy * dy);
+            const finalX = x + (curve * -dy / len);
+            const finalY = y + (curve * dx / len);
+
+            // Draw Glow
+            const gradient = ctx.createRadialGradient(finalX, finalY, 0, finalX, finalY, p.size * 3);
+            gradient.addColorStop(0, 'rgba(108, 193, 189, 0.9)');
+            gradient.addColorStop(0.4, 'rgba(108, 193, 189, 0.3)');
             gradient.addColorStop(1, 'rgba(108, 193, 189, 0)');
 
             ctx.fillStyle = gradient;
             ctx.beginPath();
-            ctx.arc(finalX, finalY, p.size * 2, 0, Math.PI * 2);
+            ctx.arc(finalX, finalY, p.size * 3, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Core
+            ctx.fillStyle = '#FFFFFF';
+            ctx.beginPath();
+            ctx.arc(finalX, finalY, p.size * 0.5, 0, Math.PI * 2);
             ctx.fill();
 
             return true;
