@@ -144,6 +144,20 @@ const UI = {
         return 'cloud';
     },
 
+    getWeatherColor(condition) {
+        if (!condition) return 'var(--accent-color)';
+        const c = condition.toLowerCase();
+        if (c === 'sunny' || c === 'clear-night') return '#ffeb3b'; // Jaune
+        if (c === 'cloudy') return '#90a4ae'; // Gris bleu
+        if (c === 'partlycloudy') return '#cfd8dc'; // Gris clair
+        if (c.includes('rain') || c === 'pouring') return '#42a5f5'; // Bleu
+        if (c.includes('snow') || c === 'hail') return '#e1f5fe'; // Blanc/Bleu très clair
+        if (c.includes('storm') || c.includes('lightning')) return '#ffc107'; // Ambre
+        if (c === 'fog' || c === 'mist') return '#b0bec5'; // Gris
+        if (c.includes('windy')) return '#81d4fa'; // Bleu ciel
+        return 'var(--accent-color)';
+    },
+
     refreshIcons(selectorOrElement) {
         if (window.lucide) {
             const options = {};
