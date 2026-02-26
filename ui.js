@@ -433,6 +433,33 @@ const UI = {
     `;
     },
 
+    createSkeletonCard(size = 'standard') {
+        const sizeClass = size !== 'standard' ? `card-${size}` : '';
+        return `
+            <div class="card skeleton ${sizeClass}">
+                <div class="device-icon icon-wrapper">
+                    <i data-lucide="square"></i>
+                </div>
+                <h3></h3>
+                <p></p>
+            </div>
+        `;
+    },
+
+    showSkeletons(containerId, count = 6) {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+
+        let htmlBuffer = '';
+        for (let i = 0; i < count; i++) {
+            // Mix of sizes for a more realistic skeleton layout
+            const size = (i === 0 || i === 3) ? 'wide' : 'standard';
+            htmlBuffer += this.createSkeletonCard(size);
+        }
+        container.innerHTML = htmlBuffer;
+        this.refreshIcons(container);
+    },
+
 
     _brightnessTimeouts: new Map(),
     handleBrightnessChange(haId, value, onAction, inputEl) {

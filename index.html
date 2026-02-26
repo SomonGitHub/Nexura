@@ -126,16 +126,15 @@
                     <section style="margin-bottom: 2.5rem;">
                         <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem;">
                             <h2 style="font-size: 1.25rem; margin: 0;">Mes favoris</h2>
-                            <button class="card" id="openAddCardBtn"
+                            <button class="card" id="openAddCardBtn" aria-label="Ajouter un favori"
                                 style="padding: 0.4rem 0.8rem; cursor: pointer; display: flex; align-items: center; gap: 0.4rem; border: 1px dashed var(--accent-color); background: rgba(0, 96, 178, 0.1); margin-top: 0; min-height: auto; flex-direction: row; height: 32px;">
                                 <i data-lucide="plus" style="width: 14px; color: var(--accent-color);"></i>
                                 <span
                                     style="font-size: 0.75rem; font-weight: 600; color: var(--accent-color);">Ajouter</span>
                             </button>
                         </div>
-                        <div id="dynamicCardsGrid"
-                            style="display: grid; grid-template-columns: repeat(auto-fill, minmax(40px, 1fr)); gap: 1rem;">
-                            <!-- Dynamic cards -->
+                        <div id="favoritesGrid" class="kpi-grid">
+                            <!-- Skeletons will be injected here via UI.showSkeletons -->
                         </div>
                     </section>
                 </div>
@@ -147,7 +146,7 @@
                         <div style="display: flex; flex-direction: column; gap: 0.75rem;">
                             <!-- Row 1: Lights -->
                             <div id="lightActionsRow" style="display: none;">
-                                <div class="card" id="turnOffAllBtn"
+                                <div class="card" id="turnOffAllBtn" aria-label="Éteindre toutes les lumières"
                                     style="display: flex; flex-direction: row; align-items: center; justify-content: flex-start; gap: 1rem; cursor: pointer; min-height: 60px; padding: 0.75rem;"
                                     onclick="turnOffAll()">
                                     <div class="logo-icon"
@@ -160,7 +159,7 @@
 
                             <!-- Row 2: Shutters -->
                             <div id="shutterActionsRow" style="display: none; flex-direction: row; gap: 0.75rem;">
-                                <div class="card" id="openAllShuttersBtn"
+                                <div class="card" id="openAllShuttersBtn" aria-label="Ouvrir tous les volets"
                                     style="display: flex; flex: 1; flex-direction: row; align-items: center; justify-content: flex-start; gap: 0.5rem; cursor: pointer; min-height: 60px; padding: 0.5rem;"
                                     onclick="controlAllShutters('open')">
                                     <div class="logo-icon"
@@ -169,7 +168,7 @@
                                     </div>
                                     <span style="font-weight: 600; font-size: 0.75rem;">Tout ouvrir</span>
                                 </div>
-                                <div class="card" id="closeAllShuttersBtn"
+                                <div class="card" id="closeAllShuttersBtn" aria-label="Fermer tous les volets"
                                     style="display: flex; flex: 1; flex-direction: row; align-items: center; justify-content: flex-start; gap: 0.5rem; cursor: pointer; min-height: 60px; padding: 0.5rem;"
                                     onclick="controlAllShutters('close')">
                                     <div class="logo-icon"
@@ -187,9 +186,8 @@
                     <section>
                         <h2 style="margin-bottom: 1.5rem; font-size: 1rem;">Pièces</h2>
                         <div class="rooms-scroll-container">
-                            <div id="roomCardsGrid"
-                                style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.5rem;">
-                                <!-- Rooms -->
+                            <div id="roomCardsGrid" class="kpi-grid">
+                                <!-- Skeletons will be injected here via UI.showSkeletons -->
                             </div>
                         </div>
                     </section>
@@ -206,7 +204,7 @@
             <div
                 style="padding: 1.5rem; border-bottom: 1px solid var(--glass-border); display: flex; justify-content: space-between; align-items: center;">
                 <h2 style="font-size: 1.2rem; margin: 0;">Ajouter aux Favoris</h2>
-                <button id="closeModal"
+                <button id="closeModal" aria-label="Fermer la fenêtre d'ajout de favoris"
                     style="background: none; border: none; color: var(--text-secondary); cursor: pointer;"><i
                         data-lucide="x"></i></button>
             </div>
@@ -222,7 +220,7 @@
             <div
                 style="padding: 1.5rem; border-bottom: 1px solid var(--glass-border); display: flex; justify-content: space-between; align-items: center;">
                 <h2 id="authTitle" style="margin: 0; font-size: 1.2rem;">Connexion Cloud</h2>
-                <button onclick="closeAuthModal()"
+                <button onclick="closeAuthModal()" aria-label="Fermer la fenêtre de connexion"
                     style="background: none; border: none; color: var(--text-secondary); cursor: pointer;"><i
                         data-lucide="x"></i></button>
             </div>
@@ -272,6 +270,7 @@
                         <input type="text" id="supabaseUrl" placeholder="Supabase Project URL" style="width: 100%;">
                         <input type="password" id="supabaseKey" placeholder="Project Anon Key" style="width: 100%;">
                         <button onclick="saveSupabaseConfig()" class="filter-btn active"
+                            aria-label="Sauvegarder la configuration Supabase"
                             style="width: 100%; height: 38px;">Sauvegarder la config</button>
                     </div>
 
@@ -279,6 +278,7 @@
                     <div id="sqlInitSection"
                         style="display: none; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--glass-border);">
                         <button onclick="showSqlScript()" class="filter-btn"
+                            aria-label="Afficher le schéma SQL pour Supabase"
                             style="width: 100%; border-style: dashed; color: var(--accent-color);">
                             <i data-lucide="database" style="width: 14px; margin-right: 5px;"></i> Initialiser le Schéma
                             SQL
@@ -296,13 +296,14 @@
                         <label style="font-size: 0.75rem; color: var(--text-secondary);">Mot de passe</label>
                         <input type="password" id="authPassword" required placeholder="••••••••" style="width: 100%;">
                     </div>
-                    <button type="submit" class="filter-btn active"
+                    <button type="submit" class="filter-btn active" aria-label="Se connecter ou s'inscrire"
                         style="width: 100%; height: 42px; font-weight: 600;">Se connecter</button>
                 </form>
 
                 <div style="margin-top: 1.5rem; text-align: center; font-size: 0.85rem;">
                     <span style="color: var(--text-secondary);" id="authToggleText">Pas encore de compte ?</span>
                     <a href="#" onclick="toggleAuthMode()" id="authToggleBtn"
+                        aria-label="Basculer entre connexion et inscription"
                         style="color: var(--accent-color); text-decoration: none; font-weight: 600; margin-left: 0.5rem;">S'inscrire</a>
                 </div>
             </div>
@@ -316,6 +317,7 @@
                 style="padding: 1.5rem; border-bottom: 1px solid var(--glass-border); display: flex; justify-content: space-between; align-items: center;">
                 <h2 style="margin: 0; font-size: 1.1rem;">Schéma SQL Supabase</h2>
                 <button onclick="document.getElementById('sqlScriptModal').style.display = 'none'"
+                    aria-label="Fermer la fenêtre du schéma SQL"
                     style="background: none; border: none; color: var(--text-secondary); cursor: pointer;"><i
                         data-lucide="x"></i></button>
             </div>
@@ -367,7 +369,7 @@ CREATE POLICY "Users can update their own profile" ON public.profiles FOR UPDATE
 CREATE POLICY "Users can insert their own profile" ON public.profiles FOR INSERT WITH CHECK (auth.uid() = id);
 CREATE POLICY "Users can manage their rooms" ON public.rooms FOR ALL USING (auth.uid() = user_id);
 CREATE POLICY "Users can manage their entities" ON public.entities FOR ALL USING (auth.uid() = user_id);</pre>
-                    <button onclick="copySqlToClipboard()" class="filter-btn active"
+                    <button onclick="copySqlToClipboard()" class="filter-btn active" aria-label="Copier le script SQL"
                         style="position: absolute; top: 10px; right: 10px; padding: 4px 10px; font-size: 0.7rem;">Copier</button>
                 </div>
             </div>
