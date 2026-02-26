@@ -640,8 +640,8 @@ CREATE POLICY "Users can manage their entities" ON public.entities FOR ALL USING
 
                 // SMART UPDATE for Dashboard Cards
                 const dashboardEntities = dashboardCards.map(cardObj => {
-                    const haId = cardObj.id;
-                    const size = cardObj.size || 'standard';
+                    const haId = typeof cardObj === 'string' ? cardObj : (cardObj.id || '');
+                    const size = typeof cardObj === 'string' ? 'standard' : (cardObj.size || 'standard');
 
                     if (haId.startsWith('empty_block_')) {
                         return { haId, name: 'Bloc vide', type: 'empty', size };
@@ -819,7 +819,10 @@ CREATE POLICY "Users can manage their entities" ON public.entities FOR ALL USING
         }
 
         window.removeCard = function (haId) {
-            dashboardCards = dashboardCards.filter(card => card.id !== haId);
+            dashboardCards = dashboardCards.filter(card => {
+                const id = typeof card === 'string' ? card : card.id;
+                return id !== haId;
+            });
             localStorage.setItem('dashboard_cards', JSON.stringify(dashboardCards));
             refreshDashboard();
             if (window.syncToCloud) window.syncToCloud();

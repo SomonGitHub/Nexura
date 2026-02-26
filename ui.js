@@ -133,7 +133,7 @@ const UI = {
             // 1. Update card classes
             if (entity.type === 'empty') {
                 card.className = `card empty-block clickable ${sizeClass}`;
-                return;
+                continue;
             }
             const isControl = ['light', 'switch', 'shutter'].includes(entity.type);
             const alertClasses = this.getAlertClasses(entity, stateData);
