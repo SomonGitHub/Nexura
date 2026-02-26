@@ -131,6 +131,19 @@ const UI = {
         return `hsl(${hue}, 80%, 60%)`;
     },
 
+    getWeatherIcon(condition) {
+        if (!condition) return 'sun';
+        const c = condition.toLowerCase();
+        if (c.includes('clear') || c === 'sunny') return 'sun';
+        if (c.includes('cloudy')) return 'cloud';
+        if (c.includes('rain') || c.includes('drizzle') || c === 'pouring') return 'cloud-rain';
+        if (c.includes('snow') || c.includes('sleet')) return 'cloud-snow';
+        if (c.includes('storm') || c.includes('lightning') || c === 'exceptional') return 'cloud-lightning';
+        if (c === 'fog' || c === 'mist' || c === 'hail') return 'cloud-fog';
+        if (c === 'windy' || c === 'windy-variant') return 'wind';
+        return 'cloud';
+    },
+
     refreshIcons(selectorOrElement) {
         if (window.lucide) {
             const options = {};

@@ -78,6 +78,18 @@
             </div>
             <header style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
                 <h1>Tableau de bord</h1>
+                <div id="weather-status"
+                    style="display: none; align-items: center; gap: 0.75rem; color: var(--text-secondary); height: 100%;">
+                    <div id="weather-icon-container" style="display: flex; align-items: center;">
+                        <i id="weather-icon" data-lucide="sun"
+                            style="width: 20px; height: 20px; color: var(--accent-color);"></i>
+                    </div>
+                    <div style="display: flex; flex-direction: column; align-items: flex-end; line-height: 1.2;">
+                        <div id="weather-temp-current" style="font-size: 1.1rem; font-weight: 700; color: white;">--°C
+                        </div>
+                        <div id="weather-temp-range" style="font-size: 0.7rem; opacity: 0.7;">-- / --</div>
+                    </div>
+                </div>
             </header>
 
             <!-- Dashboard Structure (Optimized) -->
@@ -596,6 +608,36 @@ CREATE POLICY "Users can manage their entities" ON public.entities FOR ALL USING
                 document.getElementById('kpiEnergy').style.display = hasEnergy ? 'flex' : 'none';
                 document.getElementById('kpiLights').style.display = hasLights ? 'flex' : 'none';
                 document.getElementById('kpiShutters').style.display = hasShutters ? 'flex' : 'none';
+
+                // Weather Status (Discrete - Top Right)
+                const weatherEntity = allStates.find(s => s.entity_id.startsWith('weather.'));
+                const weatherStatusEl = document.getElementById('weather-status');
+                if (weatherEntity && weatherStatusEl) {
+                    weatherStatusEl.style.display = 'flex';
+                    const currentTemp = Math.round(weatherEntity.attributes.temperature || 0);
+                    const condition = weatherEntity.state;
+
+                    // Forecast for min/max
+                    let minTemp = '--';
+                    let maxTemp = '--';
+                    if (weatherEntity.attributes.forecast && weatherEntity.attributes.forecast.length > 0) {
+                        const today = weatherEntity.attributes.forecast[0];
+                        minTemp = today.templow !== undefined ? Math.round(today.templow) : '--';
+                        maxTemp = today.temperature !== undefined ? Math.round(today.temperature) : '--';
+                    }
+
+                    document.getElementById('weather-temp-current').textContent = `${currentTemp}°C`;
+                    document.getElementById('weather-temp-range').textContent = `${minTemp}° / ${maxTemp}°`;
+
+                    const iconEl = document.getElementById('weather-icon');
+                    const newIcon = UI.getWeatherIcon(condition);
+                    if (iconEl.getAttribute('data-lucide') !== newIcon) {
+                        iconEl.setAttribute('data-lucide', newIcon);
+                        UI.refreshIcons(iconEl.parentElement);
+                    }
+                } else if (weatherStatusEl) {
+                    weatherStatusEl.style.display = 'none';
+                }
 
                 // Toggle Quick Actions Section
                 const quickActions = document.getElementById('quickActionsSection');
