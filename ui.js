@@ -499,6 +499,29 @@ const UI = {
         layer.style.opacity = enabled ? '1' : '0';
     },
 
+    initSidebar() {
+        const sidebar = document.getElementById('sidebar');
+        const toggleBtn = document.getElementById('toggleSidebar');
+        const sidebarIcon = document.getElementById('sidebarIcon');
+
+        if (!sidebar || !toggleBtn) return;
+
+        // Apply initial state
+        if (localStorage.getItem('sidebar_collapsed') === 'true') {
+            sidebar.classList.add('collapsed');
+            if (sidebarIcon) sidebarIcon.setAttribute('data-lucide', 'chevron-right');
+        }
+
+        toggleBtn.addEventListener('click', () => {
+            const isCollapsed = sidebar.classList.toggle('collapsed');
+            localStorage.setItem('sidebar_collapsed', isCollapsed);
+            if (sidebarIcon) {
+                sidebarIcon.setAttribute('data-lucide', isCollapsed ? 'chevron-right' : 'chevron-left');
+                if (window.lucide) lucide.createIcons();
+            }
+        });
+    },
+
     updateSky() {
         const layer = document.getElementById('ambiance-layer');
         if (!layer) return;
@@ -897,3 +920,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 window.UI = UI;
+// Initialize common UI components
+document.addEventListener('DOMContentLoaded', () => {
+    if (window.UI) {
+        UI.initSidebar();
+        UI.initPageTransitions();
+        UI.initAmbiance();
+    }
+});
