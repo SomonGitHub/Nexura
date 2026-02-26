@@ -190,6 +190,55 @@
             font-size: 0.75rem;
             color: var(--text-secondary);
         }
+
+        /* Switch Toggle Style */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 48px;
+            height: 24px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(255, 255, 255, 0.1);
+            transition: .4s;
+            border-radius: 24px;
+            border: 1px solid var(--glass-border);
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 2px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        input:checked+.slider {
+            background-color: var(--accent-color);
+            border-color: var(--accent-color);
+        }
+
+        input:checked+.slider:before {
+            transform: translateX(24px);
+        }
     </style>
 </head>
 
@@ -266,6 +315,47 @@
                             <option value="ocean">Abysses (Bleu)</option>
                         </select>
                     </div>
+                </div>
+            </div>
+
+            <!-- Expérience Visuelle Section -->
+            <div class="settings-section">
+                <h2>Expérience Visuelle</h2>
+
+                <div class="setting-item">
+                    <div class="setting-info">
+                        <h3>Effet Frost & Focus</h3>
+                        <p>Estompe discrètement les capteurs et appareils inactifs pour porter votre attention sur
+                            l'essentiel.</p>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" id="frostEffectToggle" onchange="saveVisualSettings()">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+                <div class="setting-item">
+                    <div class="setting-info">
+                        <h3>Flux d'Énergie Dynamique</h3>
+                        <p>Visualise la circulation de l'énergie en temps réel depuis votre source de consommation vers
+                            vos appareils.</p>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" id="energyFlowToggle" onchange="saveVisualSettings()">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+                <div class="setting-item">
+                    <div class="setting-info">
+                        <h3>Fond d'écran Dynamique</h3>
+                        <p>Adapte l'ambiance lumineuse et les couleurs du dashboard selon le cycle naturel du jour et de
+                            la nuit.</p>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" id="dynamicBgToggle" onchange="saveVisualSettings()">
+                        <span class="slider"></span>
+                    </label>
                 </div>
             </div>
 
@@ -597,7 +687,24 @@
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             lucide.createIcons();
+            loadHASettings();
+            loadTuyaSettings();
+            loadXiaomiSettings();
+            loadVisualSettings();
         });
+
+        function saveVisualSettings() {
+            localStorage.setItem('ef_frost_enabled', document.getElementById('frostEffectToggle').checked);
+            localStorage.setItem('ef_energy_enabled', document.getElementById('energyFlowToggle').checked);
+            localStorage.setItem('ef_ambiance_enabled', document.getElementById('dynamicBgToggle').checked);
+            console.log("Visual Settings saved");
+        }
+
+        function loadVisualSettings() {
+            document.getElementById('frostEffectToggle').checked = localStorage.getItem('ef_frost_enabled') !== 'false';
+            document.getElementById('energyFlowToggle').checked = localStorage.getItem('ef_energy_enabled') !== 'false';
+            document.getElementById('dynamicBgToggle').checked = localStorage.getItem('ef_ambiance_enabled') !== 'false';
+        }
         function switchTab(tab) {
             // Update Tab Items
             document.querySelectorAll('.tab-item').forEach(item => {
@@ -1450,4 +1557,5 @@
     </div>
 
 </body>
+
 </html>

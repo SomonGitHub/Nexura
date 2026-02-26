@@ -172,8 +172,9 @@ const UI = {
             // Frost & Focus: Blur if not active
             const isInactive = !isActive && stateData.state !== 'unavailable';
             // Actions (lights, switches, shutters) should NOT be frosted
-            const canBeInactive = ['binary_sensor', 'sensor', 'temperature', 'humidity'].includes(entity.type) || entity.haId.startsWith('sensor.');
-            card.classList.toggle('is-inactive', canBeInactive && !isActive);
+            const canBeInactive = ['binary_sensor', 'sensor'].includes(entity.type) || entity.haId.startsWith('sensor.');
+            const frostEnabled = localStorage.getItem('ef_frost_enabled') !== 'false';
+            card.classList.toggle('is-inactive', frostEnabled && canBeInactive && !isActive);
         });
 
         this.logMemory(`Update ${containerId}`);
@@ -300,7 +301,8 @@ const UI = {
         const alertClasses = this.getAlertClasses(entity, stateData);
         // Actions (lights, switches, shutters) should NOT be frosted
         const canBeInactive = ['binary_sensor', 'sensor', 'temperature', 'humidity'].includes(entity.type) || entity.haId.startsWith('sensor.');
-        const isInactiveClass = (canBeInactive && !isActive) ? 'is-inactive' : '';
+        const frostEnabled = localStorage.getItem('ef_frost_enabled') !== 'false';
+        const isInactiveClass = (frostEnabled && canBeInactive && !isActive) ? 'is-inactive' : '';
 
         const cardClass = `card ${isActive ? 'device-on' : ''} ${entity.type} ${isControl ? 'clickable' : ''} ${isDimmer ? 'variant-dimmer' : ''} ${alertClasses.join(' ')} ${isInactiveClass}`;
         const iconColor = isActive ? 'var(--accent-color)' : 'var(--text-secondary)';
@@ -444,7 +446,11 @@ const UI = {
         if (!layer) return;
 
         this.updateSky();
-        setInterval(() => this.updateSky(), 60000); // Every minute
+        setInterval(() => {
+            if (localStorage.getItem('ef_ambiance_enabled') !== 'false') {
+                this.updateSky();
+            }
+        }, 60000); // Every minute
     },
 
     updateSky() {
@@ -714,6 +720,7 @@ const UI = {
     },
 
     initEnergyFlow() {
+        if (localStorage.getItem('ef_energy_enabled') === 'false') return;
         this._ef.canvas = document.getElementById('energy-flow-canvas');
         if (!this._ef.canvas) return;
         this._ef.ctx = this._ef.canvas.getContext('2d');
