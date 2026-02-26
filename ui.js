@@ -165,7 +165,9 @@ const UI = {
             }
             const isControl = ['light', 'switch', 'shutter'].includes(entity.type);
             const alertClasses = this.getAlertClasses(entity, stateData);
-            const canBeInactive = ['binary_sensor', 'sensor'].includes(entity.type) || entity.haId.startsWith('sensor.');
+            const isTemperature = (entity.type === 'temperature') || (entity.type === 'sensor' && (stateData.attributes?.unit_of_measurement === '°C' || stateData.attributes?.unit_of_measurement === '°F' || stateData.attributes?.device_class === 'temperature'));
+            const isHumidity = (entity.type === 'humidity') || (entity.type === 'sensor' && (stateData.attributes?.unit_of_measurement === '%' || stateData.attributes?.device_class === 'humidity'));
+            const canBeInactive = (['binary_sensor', 'sensor'].includes(entity.type) || entity.haId.startsWith('sensor.')) && !isTemperature && !isHumidity;
             const frostEnabled = localStorage.getItem('ef_frost_enabled') !== 'false';
             const isInactiveClass = (frostEnabled && canBeInactive && !isActive) ? 'is-inactive' : '';
 
