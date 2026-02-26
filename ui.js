@@ -113,8 +113,8 @@ const UI = {
             return;
         }
 
-
-        entities.forEach((entity, index) => {
+        for (let index = 0; index < entities.length; index++) {
+            const entity = entities[index];
             const card = container.children[index];
             if (!card || card.getAttribute('data-ha-id') !== entity.haId) {
                 // Mismatch, fallback to rebuild (should be rare with stable sort)
@@ -167,6 +167,7 @@ const UI = {
                 toggle.setAttribute('onclick', `event.stopPropagation(); ${onAction}('${domain}', '${isActive ? 'turn_off' : 'turn_on'}', '${entity.haId}')`);
             }
 
+            const slider = card.querySelector('.brightness-slider');
             if (slider && stateData.attributes && stateData.attributes.brightness !== undefined) {
                 const brightnessPct = Math.round((stateData.attributes.brightness / 255) * 100);
                 if (parseInt(slider.value) !== brightnessPct) {
@@ -181,7 +182,7 @@ const UI = {
             // Frost & Focus: Blur if not active
             const isInactive = !isActive && stateData.state !== 'unavailable';
             card.classList.toggle('is-inactive', frostEnabled && canBeInactive && !isActive);
-        });
+        }
 
         this.logMemory(`Update ${containerId}`);
     },

@@ -397,9 +397,13 @@ CREATE POLICY "Users can manage their entities" ON public.entities FOR ALL USING
         const token = localStorage.getItem('haToken');
         let dashboardCards = JSON.parse(localStorage.getItem('dashboard_cards')) || [];
 
-        // Migration: convert string IDs to objects { id, size }
-        if (dashboardCards.length > 0 && typeof dashboardCards[0] === 'string') {
-            dashboardCards = dashboardCards.map(id => ({ id, size: 'standard' }));
+        // Migration: ensure every item is an object { id, size }
+        const needsMigration = dashboardCards.some(card => typeof card === 'string');
+        if (needsMigration) {
+            dashboardCards = dashboardCards.map(card => {
+                if (typeof card === 'string') return { id: card, size: 'standard' };
+                return card;
+            });
             localStorage.setItem('dashboard_cards', JSON.stringify(dashboardCards));
         }
 
@@ -824,7 +828,7 @@ CREATE POLICY "Users can manage their entities" ON public.entities FOR ALL USING
         openAddCardBtn.addEventListener('click', () => {
             entitySelectionList.innerHTML = ''; // Clear duplicates
             const managedEntities = JSON.parse(localStorage.getItem('domotique_entities')) || [];
-            const controllable = managedEntities.filter(e => ['light', 'shutter', 'switch', 'climate', 'sensor', 'binary_sensor', 'camera'].includes(e.type));
+            const controllable = managedEntities.filter(e => ['light', 'shutter', 'switch', 'climate', 'sensor', 'binary_sensor', 'camera', 'temperature', 'humidity', 'energy', 'battery'].includes(e.type));
 
             // Prepend Empty Block option
             const emptyBlockItem = document.createElement('div');
