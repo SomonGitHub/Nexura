@@ -1318,12 +1318,12 @@
                                 {%- if states[domain] -%}
                                     {%- for state in states[domain] -%}
                                         {%- set area = area_name(state.entity_id) -%}
-                                        {%- set _ = ns.entities.append({
+                                        {%- set ns.entities = ns.entities + [{
                                             "entity_id": state.entity_id,
                                             "area_name": area if area else "",
                                             "friendly_name": state.name,
                                             "source": "ha"
-                                        }) -%}
+                                        }] -%}
                                     {%- endfor -%}
                                 {%- endif -%}
                             {%- endfor -%}
