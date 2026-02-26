@@ -178,21 +178,7 @@
             fetchCategoryStates();
         }
 
-        const sidebar = document.getElementById('sidebar');
-        const toggleBtn = document.getElementById('toggleSidebar');
-        const sidebarIcon = document.getElementById('sidebarIcon');
-
-        // Initial icon and text state based on persistence
-        if (sidebar.classList.contains('collapsed')) {
-            sidebarIcon.setAttribute('data-lucide', 'chevron-right');
-        }
-
-        toggleBtn.addEventListener('click', () => {
-            const isCollapsed = sidebar.classList.toggle('collapsed');
-            localStorage.setItem('sidebar_collapsed', isCollapsed);
-            sidebarIcon.setAttribute('data-lucide', isCollapsed ? 'chevron-right' : 'chevron-left');
-            UI.refreshIcons(sidebar);
-        });
+        // Sidebar behavior is now initialized via UI.initSidebar() in DOMContentLoaded
 
         async function turnOffCategory() {
             const grid = document.getElementById('deviceGrid');
@@ -229,6 +215,8 @@
 
         // Initial fetch
         document.addEventListener('DOMContentLoaded', () => {
+            if (window.lucide) lucide.createIcons();
+            if (window.UI) UI.initSidebar();
             fetchCategoryStates();
             UI.initAmbiance();
         });
