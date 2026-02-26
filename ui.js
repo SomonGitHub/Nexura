@@ -447,10 +447,16 @@ const UI = {
 
         this.updateSky();
         setInterval(() => {
-            if (localStorage.getItem('ef_ambiance_enabled') !== 'false') {
+            const enabled = localStorage.getItem('ef_ambiance_enabled') !== 'false';
+            layer.style.opacity = enabled ? '1' : '0';
+            if (enabled) {
                 this.updateSky();
             }
         }, 60000); // Every minute
+
+        // Immediate opacity check
+        const enabled = localStorage.getItem('ef_ambiance_enabled') !== 'false';
+        layer.style.opacity = enabled ? '1' : '0';
     },
 
     updateSky() {
@@ -458,13 +464,16 @@ const UI = {
         if (!layer) return;
 
         const hour = new Date().getHours();
+        const skyClasses = ['sky-dawn', 'sky-day', 'sky-dusk', 'sky-night'];
         let skyClass = 'sky-night';
 
         if (hour >= 6 && hour < 9) skyClass = 'sky-dawn';
         else if (hour >= 9 && hour < 17) skyClass = 'sky-day';
         else if (hour >= 17 && hour < 21) skyClass = 'sky-dusk';
 
-        layer.className = skyClass;
+        // Remove old sky classes and add the new one (preserves ID)
+        layer.classList.remove(...skyClasses);
+        layer.classList.add(skyClass);
     },
 
     updateAmbiance(allStates) {
