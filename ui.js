@@ -76,6 +76,32 @@ const UI = {
 
         return this.getIconForType(entity.type);
     },
+
+    getStateDisplay(entity, stateData) {
+        if (stateData.state === 'unavailable') return 'Inconnu';
+        if (entity.type === 'camera') return 'En direct';
+
+        if (entity.type === 'binary_sensor') {
+            const devClass = stateData?.attributes?.device_class;
+            const variant = entity.variant;
+            let labels = { on: 'Activé', off: 'Repos' };
+
+            if (variant === 'presence' || devClass === 'motion' || devClass === 'occupancy') {
+                labels = { on: 'Mouvement', off: 'Calme' };
+            } else if (variant === 'door' || devClass === 'door') {
+                labels = { on: 'Ouverte', off: 'Fermée' };
+            } else if (variant === 'window' || devClass === 'window') {
+                labels = { on: 'Ouverte', off: 'Fermée' };
+            } else if (devClass === 'connectivity') {
+                labels = { on: 'Connecté', off: 'Déconnecté' };
+            } else if (devClass === 'moisture') {
+                labels = { on: 'Fuite !', off: 'Sec' };
+            }
+            return stateData.state === 'on' ? labels.on : labels.off;
+        }
+
+        return `${stateData.state}${stateData.attributes?.unit_of_measurement ? ' ' + stateData.attributes.unit_of_measurement : ''}`;
+    },
     /**
      * Get CSS color based on temperature value (Blue -> Green -> Red)
      */
@@ -186,10 +212,16 @@ const UI = {
             }
 
             // 3. Update State Text
-            const stateText = card.querySelector('.state-text');
-            const newStateDisplay = `${stateData.state}${stateData.attributes?.unit_of_measurement ? ' ' + stateData.attributes.unit_of_measurement : ''}`;
-            if (stateText && stateText.textContent.trim() !== newStateDisplay) {
-                stateText.textContent = newStateDisplay;
+            const stateDisplayEl = card.querySelector('.state-display');
+            if (stateDisplayEl) {
+                const newStateDisplay = this.getStateDisplay(entity, stateData);
+                if (stateDisplayEl.textContent.trim() !== newStateDisplay) {
+                    stateDisplayEl.textContent = newStateDisplay;
+                }
+                // Temperature/Humidity dynamic color update
+                if (isTemperature) stateDisplayEl.style.color = this.getTemperatureColor(stateData.state);
+                else if (isHumidity) stateDisplayEl.style.color = this.getHumidityColor(stateData.state);
+                else stateDisplayEl.style.color = 'inherit';
             }
 
 
@@ -299,35 +331,8 @@ const UI = {
         const isControl = ['light', 'switch', 'shutter'].includes(entity.type);
         const isDimmer = entity.variant === 'dimmer' && entity.type === 'light';
 
-        let stateDisplay = `${stateData.state}${stateData.attributes?.unit_of_measurement ? ' ' + stateData.attributes.unit_of_measurement : ''}`;
+        let stateDisplay = this.getStateDisplay(entity, stateData);
         let icon = this.getIconForEntity(entity, stateData);
-
-        const isTemperature = (entity.type === 'temperature') || (entity.type === 'sensor' && (stateData.attributes?.unit_of_measurement === '°C' || stateData.attributes?.unit_of_measurement === '°F' || stateData.attributes?.device_class === 'temperature'));
-        const isHumidity = (entity.type === 'humidity') || (entity.type === 'sensor' && (stateData.attributes?.unit_of_measurement === '%' || stateData.attributes?.device_class === 'humidity'));
-
-        if (entity.type === 'binary_sensor') {
-            const devClass = stateData?.attributes?.device_class;
-            const variant = entity.variant;
-            let labels = { on: 'Activé', off: 'Repos' };
-
-
-            if (variant === 'presence' || devClass === 'motion' || devClass === 'occupancy') {
-                labels = { on: 'Mouvement', off: 'Calme' };
-            } else if (variant === 'door' || devClass === 'door') {
-                labels = { on: 'Ouverte', off: 'Fermée' };
-            } else if (variant === 'window' || devClass === 'window') {
-                labels = { on: 'Ouverte', off: 'Fermée' };
-            } else if (devClass === 'connectivity') {
-                labels = { on: 'Connecté', off: 'Déconnecté' };
-            } else if (devClass === 'moisture') {
-                labels = { on: 'Fuite !', off: 'Sec' };
-            }
-            stateDisplay = stateData.state === 'on' ? labels.on : labels.off;
-            if (stateData.state === 'unavailable') stateDisplay = 'Inconnu';
-        } else if (entity.type === 'camera') {
-            icon = 'video';
-            stateDisplay = 'En direct';
-        }
 
         const alertClasses = this.getAlertClasses(entity, stateData);
         // Actions (lights, switches, shutters) should NOT be frosted
