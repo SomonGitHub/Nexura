@@ -79,15 +79,19 @@
             <header style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
                 <h1>Tableau de bord</h1>
                 <div id="weather-status"
-                    style="display: none; align-items: center; gap: 0.75rem; color: var(--text-secondary); height: 100%;">
+                    style="display: none; align-items: center; gap: 1.5rem; color: var(--text-secondary); height: 100%; transition: all 0.3s ease;">
                     <div id="weather-icon-container" style="display: flex; align-items: center;">
                         <i id="weather-icon" data-lucide="sun"
-                            style="width: 20px; height: 20px; color: var(--accent-color);"></i>
+                            style="width: 48px; height: 48px; color: var(--accent-color);"></i>
                     </div>
-                    <div style="display: flex; flex-direction: column; align-items: flex-end; line-height: 1.2;">
-                        <div id="weather-temp-current" style="font-size: 1.1rem; font-weight: 700; color: white;">--°C
+                    <div style="display: flex; flex-direction: column; align-items: flex-end; line-height: 1.1;">
+                        <div id="weather-temp-current"
+                            style="font-size: 2.8rem; font-weight: 800; color: white; font-family: 'Outfit', sans-serif;">
+                            --°C
                         </div>
-                        <div id="weather-temp-range" style="font-size: 0.7rem; opacity: 0.7;">-- / --</div>
+                        <div id="weather-temp-range"
+                            style="font-size: 1.2rem; font-weight: 500; opacity: 0.8; letter-spacing: 0.5px;">-- / --
+                        </div>
                     </div>
                 </div>
             </header>
@@ -616,22 +620,33 @@ CREATE POLICY "Users can manage their entities" ON public.entities FOR ALL USING
                 }
 
                 const weatherStatusEl = document.getElementById('weather-status');
-                if (weatherEntity) console.info("[Weather Debug] Found:", weatherEntity.entity_id, "State:", weatherEntity.state);
-                else console.warn("[Weather Debug] No weather entity detected.");
+                if (weatherEntity) {
+                    console.info("[Weather Debug] Entity:", weatherEntity.entity_id);
+                    console.info("[Weather Debug] Attributes:", weatherEntity.attributes);
+                } else {
+                    console.warn("[Weather Debug] No weather entity detected.");
+                }
 
                 if (weatherEntity && weatherStatusEl) {
                     weatherStatusEl.style.display = 'flex';
                     const currentTemp = Math.round(weatherEntity.attributes.temperature || 0);
                     const condition = weatherEntity.state;
 
-                    // Forecast: Handle both 'forecast' attribute and potential missing data
+                    // Forecast: Handle different formats
                     let minTemp = '--';
                     let maxTemp = '--';
-                    const forecast = weatherEntity.attributes.forecast;
-                    if (Array.isArray(forecast) && forecast.length > 0) {
+                    const attr = weatherEntity.attributes;
+
+                    // Check direct attributes (some integrations)
+                    if (attr.templow !== undefined) minTemp = Math.round(attr.templow);
+                    if (attr.temperature_high !== undefined) maxTemp = Math.round(attr.temperature_high);
+
+                    // Check forecast array
+                    const forecast = attr.forecast;
+                    if ((minTemp === '--' || maxTemp === '--') && Array.isArray(forecast) && forecast.length > 0) {
                         const today = forecast[0];
-                        minTemp = today.templow !== undefined ? Math.round(today.templow) : '--';
-                        maxTemp = today.temperature !== undefined ? Math.round(today.temperature) : '--';
+                        if (minTemp === '--') minTemp = today.templow !== undefined ? Math.round(today.templow) : '--';
+                        if (maxTemp === '--') maxTemp = today.temperature !== undefined ? Math.round(today.temperature) : '--';
                     }
 
                     document.getElementById('weather-temp-current').textContent = `${currentTemp}°C`;
