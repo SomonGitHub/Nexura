@@ -622,7 +622,8 @@ CREATE POLICY "Users can manage their entities" ON public.entities FOR ALL USING
                 const weatherStatusEl = document.getElementById('weather-status');
                 if (weatherEntity) {
                     console.info("[Weather Debug] Entity:", weatherEntity.entity_id);
-                    console.info("[Weather Debug] Attributes:", weatherEntity.attributes);
+                    console.info("[Weather Debug] Available Keys:", Object.keys(weatherEntity.attributes).join(', '));
+                    console.info("[Weather Debug] Full Attributes:", weatherEntity.attributes);
                 } else {
                     console.warn("[Weather Debug] No weather entity detected.");
                 }
@@ -632,21 +633,32 @@ CREATE POLICY "Users can manage their entities" ON public.entities FOR ALL USING
                     const currentTemp = Math.round(weatherEntity.attributes.temperature || 0);
                     const condition = weatherEntity.state;
 
-                    // Forecast: Handle different formats
+                    // Forecast: Exhaustive search for min/max keys
                     let minTemp = '--';
                     let maxTemp = '--';
                     const attr = weatherEntity.attributes;
+                    const minKeys = ['templow', 'temperature_low', 'min_temp', 'low_temp'];
+                    const maxKeys = ['temperature_high', 'max_temp', 'high_temp', 'temp_high'];
 
-                    // Check direct attributes (some integrations)
-                    if (attr.templow !== undefined) minTemp = Math.round(attr.templow);
-                    if (attr.temperature_high !== undefined) maxTemp = Math.round(attr.temperature_high);
+                    const findValue = (obj, keys) => {
+                        for (const key of keys) {
+                            if (obj[key] !== undefined && obj[key] !== null) return Math.round(obj[key]);
+                        }
+                        return '--';
+                    };
 
-                    // Check forecast array
+                    minTemp = findValue(attr, minKeys);
+                    maxTemp = findValue(attr, maxKeys);
+
+                    // Fallback to forecast array
                     const forecast = attr.forecast;
                     if ((minTemp === '--' || maxTemp === '--') && Array.isArray(forecast) && forecast.length > 0) {
                         const today = forecast[0];
-                        if (minTemp === '--') minTemp = today.templow !== undefined ? Math.round(today.templow) : '--';
-                        if (maxTemp === '--') maxTemp = today.temperature !== undefined ? Math.round(today.temperature) : '--';
+                        if (minTemp === '--') minTemp = findValue(today, minKeys);
+                        if (maxTemp === '--') {
+                            maxTemp = findValue(today, maxKeys);
+                            if (maxTemp === '--' && today.temperature !== undefined) maxTemp = Math.round(today.temperature);
+                        }
                     }
 
                     document.getElementById('weather-temp-current').textContent = `${currentTemp}°C`;
