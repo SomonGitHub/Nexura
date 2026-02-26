@@ -116,6 +116,11 @@
                             <span class="kpi-value" id="shuttersStatus">--</span>
                             <p style="color: var(--accent-color); font-size: 0.75rem;" id="shuttersDetail">--</p>
                         </div>
+                        <div class="card kpi-card" id="kpiOpenings" style="display: none;">
+                            <span class="kpi-label">Ouvertures</span>
+                            <span class="kpi-value" id="openingsStatus">--</span>
+                            <p style="color: #EF4444; font-size: 0.75rem;" id="openingsDetail">--</p>
+                        </div>
                     </section>
                     <!-- Mes favoris -->
                     <section style="margin-bottom: 2.5rem;">
@@ -605,10 +610,12 @@ CREATE POLICY "Users can manage their entities" ON public.entities FOR ALL USING
                 const hasEnergy = managedEntities.some(e => e.type === 'energy') || !!localStorage.getItem('haEntityEnergy');
                 const hasLights = managedEntities.some(e => e.type === 'light');
                 const hasShutters = managedEntities.some(e => e.type === 'shutter');
+                const hasOpenings = managedEntities.some(e => ['door', 'window', 'opening'].includes(e.type));
 
                 document.getElementById('kpiEnergy').style.display = hasEnergy ? 'flex' : 'none';
                 document.getElementById('kpiLights').style.display = hasLights ? 'flex' : 'none';
                 document.getElementById('kpiShutters').style.display = hasShutters ? 'flex' : 'none';
+                document.getElementById('kpiOpenings').style.display = hasOpenings ? 'flex' : 'none';
 
                 // Weather Status (Discrete - Top Right)
                 let weatherEntity = allStates.find(s => s.entity_id.startsWith('weather.'));
@@ -675,6 +682,18 @@ CREATE POLICY "Users can manage their entities" ON public.entities FOR ALL USING
                     }).length;
                     document.getElementById('shuttersStatus').innerText = openShutters === 0 ? 'Fermés' : (openShutters === shutters.length ? 'Ouverts' : 'Partiels');
                     document.getElementById('shuttersDetail').innerText = `${openShutters} ouverts sur ${shutters.length}`;
+                }
+
+                if (hasOpenings) {
+                    const openings = managedEntities.filter(e => ['door', 'window', 'opening'].includes(e.type));
+                    const currentlyOpen = openings.filter(o => {
+                        const s = allStates.find(st => st.entity_id === o.haId);
+                        return s && (s.state === 'on' || s.state === 'open');
+                    }).length;
+
+                    document.getElementById('openingsStatus').innerText = currentlyOpen === 0 ? 'Fermées' : `${currentlyOpen} ${currentlyOpen > 1 ? 'Ouvertes' : 'Ouverte'}`;
+                    document.getElementById('openingsDetail').innerText = `${currentlyOpen} ouverte${currentlyOpen > 1 ? 's' : ''} sur ${openings.length}`;
+                    document.getElementById('openingsStatus').style.color = currentlyOpen > 0 ? '#EF4444' : 'var(--text-primary)';
                 }
 
                 // SMART UPDATE for Dashboard Cards

@@ -592,25 +592,25 @@ body {
 }
 
 .kpi-card {
-  grid-column: span 5;
-  /* 200px (5 * 40px) */
-  padding: 1.25rem;
-  min-height: 100px;
+  grid-column: span 4;
+  /* 160px (4 * 40px) */
+  padding: 1rem;
+  min-height: 85px;
   display: flex;
   flex-direction: column;
   justify-content: center;
 }
 
 .kpi-label {
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   color: var(--text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.4rem;
 }
 
 .kpi-value {
-  font-size: 1.75rem;
+  font-size: 1.5rem;
   font-weight: 800;
   color: var(--text-primary);
 }
