@@ -46,6 +46,36 @@ const UI = {
             default: return 'help-circle';
         }
     },
+
+    getIconForEntity(entity, stateData) {
+        const isActive = ['on', 'open', 'playing'].includes(stateData.state);
+        const devClass = stateData?.attributes?.device_class;
+        const variant = entity.variant;
+
+        // Binary Sensors (Doors, Windows, Motion)
+        if (entity.type === 'binary_sensor') {
+            if (variant === 'presence' || devClass === 'motion' || devClass === 'occupancy') {
+                return 'unfold-more';
+            } else if (variant === 'door' || devClass === 'door') {
+                return isActive ? 'door-open' : 'door-closed';
+            } else if (variant === 'window' || devClass === 'window') {
+                return isActive ? 'panel-top' : 'square';
+            } else if (devClass === 'connectivity') {
+                return 'wifi';
+            } else if (devClass === 'moisture') {
+                return 'droplet';
+            }
+        }
+
+        // Temperature & Humidity specialized types
+        const isTemperature = (entity.type === 'temperature') || (entity.type === 'sensor' && (stateData.attributes?.unit_of_measurement === '°C' || stateData.attributes?.unit_of_measurement === '°F' || stateData.attributes?.device_class === 'temperature'));
+        const isHumidity = (entity.type === 'humidity') || (entity.type === 'sensor' && (stateData.attributes?.unit_of_measurement === '%' || stateData.attributes?.device_class === 'humidity'));
+
+        if (isTemperature) return 'thermometer';
+        if (isHumidity) return 'droplet';
+
+        return this.getIconForType(entity.type);
+    },
     /**
      * Get CSS color based on temperature value (Blue -> Green -> Red)
      */
@@ -143,9 +173,15 @@ const UI = {
 
             card.className = `card ${isActive ? 'device-on' : ''} ${entity.type} ${isControl ? 'clickable' : ''} ${alertClasses.join(' ')} ${isInactiveClass} ${sizeClass}`;
 
-            // 2. Update Icon color
+            // 2. Update Icon & color
             const iconContainer = card.querySelector('.device-icon');
             if (iconContainer) {
+                const iconElement = iconContainer.querySelector('i');
+                const newIcon = this.getIconForEntity(entity, stateData);
+                if (iconElement && iconElement.getAttribute('data-lucide') !== newIcon) {
+                    iconElement.setAttribute('data-lucide', newIcon);
+                    this.refreshIcons(card);
+                }
                 iconContainer.style.color = isActive ? 'var(--accent-color)' : 'var(--text-secondary)';
             }
 
@@ -264,18 +300,7 @@ const UI = {
         const isDimmer = entity.variant === 'dimmer' && entity.type === 'light';
 
         let stateDisplay = `${stateData.state}${stateData.attributes?.unit_of_measurement ? ' ' + stateData.attributes.unit_of_measurement : ''}`;
-        let icon = this.getIconForType(entity.type);
-
-        // Specific logic for Sensors (Temperature & Humidity)
-        const isTemperature = (entity.type === 'temperature') || (entity.type === 'sensor' && (stateData.attributes?.unit_of_measurement === '°C' || stateData.attributes?.unit_of_measurement === '°F' || stateData.attributes?.device_class === 'temperature'));
-        const isHumidity = (entity.type === 'humidity') || (entity.type === 'sensor' && (stateData.attributes?.unit_of_measurement === '%' || stateData.attributes?.device_class === 'humidity'));
-
-        if (isTemperature) {
-            icon = 'thermometer';
-        } else if (isHumidity) {
-            icon = 'droplet';
-        }
-
+        let icon = this.getIconForEntity(entity, stateData);
 
         if (entity.type === 'binary_sensor') {
             const devClass = stateData?.attributes?.device_class;
@@ -285,19 +310,14 @@ const UI = {
 
             if (variant === 'presence' || devClass === 'motion' || devClass === 'occupancy') {
                 labels = { on: 'Mouvement', off: 'Calme' };
-                icon = 'unfold-more';
             } else if (variant === 'door' || devClass === 'door') {
                 labels = { on: 'Ouverte', off: 'Fermée' };
-                icon = isActive ? 'door-open' : 'door-closed';
             } else if (variant === 'window' || devClass === 'window') {
                 labels = { on: 'Ouverte', off: 'Fermée' };
-                icon = isActive ? 'layout' : 'square';
             } else if (devClass === 'connectivity') {
                 labels = { on: 'Connecté', off: 'Déconnecté' };
-                icon = 'wifi';
             } else if (devClass === 'moisture') {
                 labels = { on: 'Fuite !', off: 'Sec' };
-                icon = 'droplet';
             }
             stateDisplay = stateData.state === 'on' ? labels.on : labels.off;
             if (stateData.state === 'unavailable') stateDisplay = 'Inconnu';
