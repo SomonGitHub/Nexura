@@ -633,7 +633,9 @@ CREATE POLICY "Users can manage their entities" ON public.entities FOR ALL USING
                             iconEl.setAttribute('data-lucide', newIcon);
                             UI.refreshIcons(iconEl.parentElement);
                         }
-                        iconEl.style.color = newColor;
+                        // Re-query: Lucide might have replaced the element
+                        const activeIcon = document.getElementById('weather-icon');
+                        if (activeIcon) activeIcon.style.color = newColor;
                     }
                 } else if (weatherStatusEl) {
                     weatherStatusEl.style.display = 'none';
