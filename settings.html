@@ -246,11 +246,6 @@
     <div class="app-container">
         <!-- Sidebar -->
         <aside class="sidebar" id="sidebar">
-            <script>
-                if (localStorage.getItem('sidebar_collapsed') === 'true') {
-                    document.getElementById('sidebar').classList.add('collapsed');
-                }
-            </script>
             <nav class="nav-links" style="margin-top: 1rem;">
                 <a href="index.html" class="nav-item">
                     <i data-lucide="layout-dashboard" class="nav-icon"></i>
@@ -1306,16 +1301,18 @@
                     try {
                         const template = `
                             [
-                            {% set entities = states.light | list + states.switch | list + states.sensor | list + states.cover | list + states.climate | list + states.binary_sensor | list + states.camera | list + states.image | list %}
-                            {% for state in entities %}
-                            {
-                            "entity_id": {{ state.entity_id | tojson }},
-                            "area_name": {{ area_name(state.entity_id) | default("") | tojson }},
-                            "friendly_name": {{ state.attributes.friendly_name | default(state.entity_id) | tojson }},
-                            "source": "ha"
-                            }{{ "," if not loop.last }}
+                            {% set domains = ['light', 'switch', 'cover', 'climate', 'binary_sensor', 'sensor', 'camera'] %}
+                            {% for domain in domains %}
+                                {% for state in states[domain] %}
+                                {
+                                "entity_id": {{ state.entity_id | tojson }},
+                                "area_name": {{ area_name(state.entity_id) | default("") | tojson }},
+                                "friendly_name": {{ state.attributes.friendly_name | default(state.entity_id) | tojson }},
+                                "source": "ha"
+                                }{{ "," if not loop.last or not loop.parentloop.last }}
+                                {% endfor %}
                             {% endfor %}
-                            ]`.trim();
+                            ]`.trim().replace(/,(\s*\])/g, '$1');
 
                         const response = await fetch(`${haUrl}/api/template`, {
                             method: 'POST',

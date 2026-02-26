@@ -3,6 +3,7 @@
  * Defensive scripts to deter unauthorized inspection and copying.
  */
 (function () {
+    if (localStorage.getItem('nexura_debug') === 'true') return;
     // Disable right-click
     document.addEventListener('contextmenu', e => e.preventDefault());
 
