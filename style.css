@@ -997,34 +997,38 @@ h1 {
 
 /* Modern Page Transitions (Simple & Elegant) */
 body.navigating-out .app-container {
-  animation: fadeOutSlide 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  animation: fadeOutModern 0.35s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 
 body.navigating-in .app-container {
-  animation: fadeInSlide 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards !important;
+  animation: fadeInModern 0.4s cubic-bezier(0.1, 0.9, 0.2, 1) forwards !important;
 }
 
-@keyframes fadeOutSlide {
+@keyframes fadeOutModern {
   from {
     opacity: 1;
-    transform: translateY(0);
+    transform: scale(1);
+    filter: blur(0px);
   }
 
   to {
     opacity: 0;
-    transform: translateY(-30px);
+    transform: scale(0.97);
+    filter: blur(4px);
   }
 }
 
-@keyframes fadeInSlide {
+@keyframes fadeInModern {
   from {
     opacity: 0;
-    transform: translateY(30px);
+    transform: scale(1.03);
+    filter: blur(4px);
   }
 
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: scale(1);
+    filter: blur(0px);
   }
 }
 
