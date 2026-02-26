@@ -519,19 +519,22 @@ CREATE POLICY "Users can manage their entities" ON public.entities FOR ALL USING
         }
 
         // --- SortableJS Init ---
-        new Sortable(dynamicCardsGrid, {
-            animation: 150,
-            ghostClass: 'sortable-ghost',
-            onEnd: function () {
-                const newOrder = Array.from(dynamicCardsGrid.children).map(child => ({
-                    id: child.getAttribute('data-ha-id'),
-                    size: child.getAttribute('data-card-size') || 'standard'
-                }));
-                dashboardCards = newOrder;
-                localStorage.setItem('dashboard_cards', JSON.stringify(dashboardCards));
-                if (window.syncToCloud) window.syncToCloud();
-            }
-        });
+        const favoritesGridEl = document.getElementById('favoritesGrid');
+        if (favoritesGridEl) {
+            new Sortable(favoritesGridEl, {
+                animation: 150,
+                ghostClass: 'sortable-ghost',
+                onEnd: function () {
+                    const newOrder = Array.from(favoritesGridEl.children).map(child => ({
+                        id: child.getAttribute('data-ha-id'),
+                        size: child.getAttribute('data-card-size') || 'standard'
+                    }));
+                    dashboardCards = newOrder;
+                    localStorage.setItem('dashboard_cards', JSON.stringify(dashboardCards));
+                    if (window.syncToCloud) window.syncToCloud();
+                }
+            });
+        }
 
         async function callHAService(domain, service, entityId, data = {}) {
             const currentUrl = localStorage.getItem('haUrl');
@@ -739,7 +742,7 @@ CREATE POLICY "Users can manage their entities" ON public.entities FOR ALL USING
                     return null;
                 }).filter(Boolean);
 
-                UI.smartUpdateGrid('dynamicCardsGrid', dashboardEntities, allStates, {
+                UI.smartUpdateGrid('favoritesGrid', dashboardEntities, allStates, {
                     showRemove: true,
                     onRemove: "removeCard('${haId}')",
                     onClick: "handleCardClick(event, '${haId}', ${isActive_bool})",
