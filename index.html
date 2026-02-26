@@ -640,6 +640,7 @@ CREATE POLICY "Users can manage their entities" ON public.entities FOR ALL USING
 
                 // SMART UPDATE for Dashboard Cards
                 const dashboardEntities = dashboardCards.map(cardObj => {
+                    if (!cardObj) return null;
                     const haId = typeof cardObj === 'string' ? cardObj : (cardObj.id || '');
                     const size = typeof cardObj === 'string' ? 'standard' : (cardObj.size || 'standard');
 

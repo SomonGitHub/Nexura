@@ -112,11 +112,9 @@ const UI = {
                 const el = typeof selectorOrElement === 'string' ? document.querySelector(selectorOrElement) : selectorOrElement;
                 if (el) {
                     lucide.createIcons({
+                        root: el,
                         attrs: { class: 'lucide-icon' },
-                        nameAttr: 'data-lucide',
-                        // Unfortunately lucide.createIcons doesn't take a root element in some versions
-                        // but we can pass a selection if it supports it. 
-                        // If not, we still call it but less frequently.
+                        nameAttr: 'data-lucide'
                     });
                 }
             } else {
@@ -302,6 +300,9 @@ const UI = {
         let stateDisplay = `${stateData.state}${stateData.attributes?.unit_of_measurement ? ' ' + stateData.attributes.unit_of_measurement : ''}`;
         let icon = this.getIconForEntity(entity, stateData);
 
+        const isTemperature = (entity.type === 'temperature') || (entity.type === 'sensor' && (stateData.attributes?.unit_of_measurement === '°C' || stateData.attributes?.unit_of_measurement === '°F' || stateData.attributes?.device_class === 'temperature'));
+        const isHumidity = (entity.type === 'humidity') || (entity.type === 'sensor' && (stateData.attributes?.unit_of_measurement === '%' || stateData.attributes?.device_class === 'humidity'));
+
         if (entity.type === 'binary_sensor') {
             const devClass = stateData?.attributes?.device_class;
             const variant = entity.variant;
@@ -323,7 +324,7 @@ const UI = {
             if (stateData.state === 'unavailable') stateDisplay = 'Inconnu';
         } else if (entity.type === 'camera') {
             icon = 'video';
-            statusText = 'En direct';
+            stateDisplay = 'En direct';
         }
 
         const alertClasses = this.getAlertClasses(entity, stateData);
