@@ -23,7 +23,6 @@ share/python-wheels/
 MANIFEST
 
 # Frontend build artifacts
-custom_components/nexura/frontend/dist/
 custom_components/nexura/frontend/node_modules/
 
 # Environment
