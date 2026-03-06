@@ -1,0 +1,32 @@
+{
+    "config": {
+        "step": {
+            "user": {
+                "title": "Nexura Configuration",
+                "description": "Please enter the configuration details.",
+                "data": {
+                    "host": "Host/IP Address"
+                }
+            }
+        },
+        "error": {
+            "cannot_connect": "Failed to connect",
+            "invalid_auth": "Invalid authentication",
+            "unknown": "Unexpected error"
+        },
+        "abort": {
+            "already_configured": "Device is already configured"
+        }
+    },
+    "options": {
+        "step": {
+            "init": {
+                "title": "Nexura Options",
+                "description": "Configure Nexura settings.",
+                "data": {
+                    "theme": "Preferred Theme"
+                }
+            }
+        }
+    }
+}

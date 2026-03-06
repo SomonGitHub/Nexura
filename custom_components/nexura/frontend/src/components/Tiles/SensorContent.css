@@ -1,0 +1,67 @@
+.sensor-content {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start;
+    height: 100%;
+    width: 100%;
+}
+
+.sensor-value-container {
+    display: flex;
+    align-items: baseline;
+    gap: 4px;
+}
+
+.sensor-value {
+    font-size: 2.8rem;
+    font-weight: 700;
+    line-height: 1.1;
+    letter-spacing: -1.5px;
+    background: linear-gradient(135deg, var(--text-primary) 0%, var(--accent-color) 100%);
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+body.theme-dark .sensor-value {
+    filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.2));
+}
+
+.variant-danger .sensor-value {
+    background: linear-gradient(135deg, #ff4e50 0%, #ff8c00 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+}
+
+.variant-info .sensor-value {
+    background: var(--text-primary);
+    -webkit-background-clip: text;
+    background-clip: text;
+}
+
+.sensor-unit {
+    font-size: 1.2rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    margin-bottom: 0.2rem;
+    opacity: 0.7;
+}
+
+.sensor-label {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    opacity: 0.5;
+    margin-top: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Adjust for smaller tiles if needed */
+.tile-small .sensor-value {
+    font-size: 2.2rem;
+}
+
+.tile-small .sensor-unit {
+    font-size: 1rem;
+}

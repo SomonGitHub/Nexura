@@ -1,0 +1,241 @@
+.sidebar-nav {
+    width: 200px;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    padding: 2rem 1rem;
+    gap: 1.5rem;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-sizing: border-box;
+    background: var(--sidebar-bg);
+    transition: var(--theme-transition);
+}
+
+.sidebar-section {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.sidebar-section.rooms-section {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+.rooms-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    overflow-y: auto;
+    padding-right: 4px;
+    flex: 1;
+}
+
+/* Custom Scrollbar */
+.rooms-list::-webkit-scrollbar {
+    width: 3px;
+}
+
+.rooms-list::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.rooms-list::-webkit-scrollbar-thumb {
+    background: var(--divider-color);
+    border-radius: 10px;
+}
+
+/* Nav Item Styles */
+.nav-item {
+    position: relative;
+    display: flex;
+    align-items: center;
+    width: 100%;
+    padding: 12px 16px;
+    background: transparent;
+    border: none;
+    border-radius: 14px;
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.3s ease;
+    overflow: hidden;
+}
+
+
+
+.nav-active-bg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: var(--nav-active-bg);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid var(--tile-border);
+    box-shadow: var(--tile-shadow);
+    border-radius: 14px;
+    z-index: 0;
+    transition: var(--theme-transition);
+}
+
+.nav-item-content {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    min-width: 0;
+}
+
+.nav-icon-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    flex-shrink: 0;
+}
+
+.nav-label-container {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+}
+
+.nav-label {
+    display: inline-block;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    transition: var(--theme-transition);
+    white-space: nowrap;
+}
+
+.nav-label:not(.should-animate) {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    width: 100%;
+}
+
+.nav-label.should-animate {
+    animation: marquee 8s ease-in-out infinite alternate;
+    padding-right: 16px;
+}
+
+body.theme-dark .nav-item:hover .nav-label,
+body.theme-dark .nav-item.active .nav-label {
+    color: #ffffff;
+}
+
+body.theme-light .nav-item:hover .nav-label,
+body.theme-light .nav-item.active .nav-label {
+    color: var(--text-primary);
+}
+
+@keyframes marquee {
+    0% {
+        transform: translateX(0);
+    }
+
+    15% {
+        transform: translateX(0);
+    }
+
+    /* Pause au début */
+    85% {
+        transform: translateX(var(--scroll-x, -40px));
+    }
+
+    /* Déplacement exact */
+    100% {
+        transform: translateX(var(--scroll-x, -40px));
+    }
+
+    /* Pause à la fin */
+}
+
+
+
+.nav-item.active .nav-label {
+    font-weight: 600;
+}
+
+/* Alert Indicator */
+.nav-alert-dot {
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    width: 8px;
+    height: 8px;
+    background: #ff4444;
+    border-radius: 50%;
+    border: 2px solid #0a0a1a;
+    box-shadow: 0 0 10px rgba(255, 68, 68, 0.5);
+}
+
+.sidebar-divider {
+    height: 1px;
+    background: linear-gradient(to right, var(--divider-color), transparent);
+    margin: 0.5rem 0;
+}
+
+.sidebar-subtitle {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--text-secondary);
+    opacity: 0.5;
+    margin: 0 0 8px 16px;
+    font-weight: 700;
+}
+
+.sidebar-edit-badge {
+    margin: 1rem 0;
+    background: rgba(255, 170, 0, 0.1);
+    color: #ffaa00;
+    border: 1px solid rgba(255, 170, 0, 0.2);
+    padding: 10px;
+    border-radius: 12px;
+    font-size: 0.65rem;
+    text-align: center;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.sidebar-actions {
+    margin-top: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.nav-item-action {
+    margin-top: 4px;
+}
+
+@media (max-width: 900px) {
+    .sidebar-nav {
+        width: 84px;
+        padding: 2rem 0.5rem;
+    }
+
+    .nav-label,
+    .sidebar-subtitle,
+    .sidebar-edit-badge {
+        display: none;
+    }
+
+    .nav-item-content {
+        justify-content: center;
+    }
+}

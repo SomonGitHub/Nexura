@@ -1,0 +1,96 @@
+.tile-animated-halo {
+    position: absolute;
+    inset: 0;
+    z-index: 5;
+    border-radius: inherit;
+    padding: 2px;
+    /* Thinner border for more elegance */
+    pointer-events: none;
+
+    /* Perfect mask for a border effect */
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask-composite: exclude;
+    -webkit-mask-composite: destination-out;
+}
+
+.halo-gradient {
+    position: absolute;
+    inset: -50%;
+    width: 200%;
+    height: 200%;
+    background: conic-gradient(transparent,
+            var(--halo-color-1),
+            var(--halo-color-2),
+            var(--halo-color-1),
+            transparent);
+    animation: rotate-halo 6s linear infinite;
+    /* Slower, more calming rotation */
+}
+
+@keyframes rotate-halo {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Base style for all halos to ensure they are visible and have a glow */
+.tile-animated-halo[class*="halo-"] {
+    opacity: 0.9;
+    display: block;
+}
+
+/* Specific Colors and Glows - Using filter on the halo itself */
+.halo-gold {
+    --halo-color-1: #ffaa00;
+    --halo-color-2: #fff8eb;
+    filter: drop-shadow(0 0 4px rgba(255, 170, 0, 0.6));
+}
+
+.halo-fire {
+    --halo-color-1: #ff4e50;
+    --halo-color-2: #f9d423;
+    filter: drop-shadow(0 0 4px rgba(255, 78, 80, 0.6));
+}
+
+.halo-ice {
+    --halo-color-1: #00d2ff;
+    --halo-color-2: #3a7bd5;
+    filter: drop-shadow(0 0 4px rgba(0, 210, 255, 0.6));
+}
+
+.halo-water {
+    --halo-color-1: #00416a;
+    --halo-color-2: #78ffd6;
+    filter: drop-shadow(0 0 4px rgba(0, 65, 106, 0.6));
+}
+
+.halo-danger {
+    --halo-color-1: #f85032;
+    --halo-color-2: #e73827;
+    filter: drop-shadow(0 0 8px rgba(248, 80, 50, 0.8));
+    animation: pulse-danger 1.5s ease-in-out infinite;
+}
+
+.halo-electric {
+    --halo-color-1: #00f2fe;
+    --halo-color-2: #4facfe;
+    filter: drop-shadow(0 0 4px rgba(0, 242, 254, 0.6));
+}
+
+@keyframes pulse-danger {
+
+    0%,
+    100% {
+        opacity: 0.8;
+    }
+
+    50% {
+        opacity: 1;
+        filter: drop-shadow(0 0 12px rgba(248, 80, 50, 1));
+    }
+}
