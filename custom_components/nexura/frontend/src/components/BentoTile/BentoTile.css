@@ -259,11 +259,21 @@ body.theme-light .btn-tile-action {
 /* Mobile specific spans to avoid breaking layout */
 @media (max-width: 480px) {
 
+    .tile-mini {
+        height: auto;
+        min-height: calc((100vw - 2rem - 1.5rem) / 4);
+    }
+
+    .tile-mini,
+    .tile-small {
+        grid-column: span 2;
+    }
+
     .tile-square,
     .tile-rect,
     .tile-large-square,
     .tile-large-rect {
-        grid-column: span 2;
+        grid-column: span 4;
     }
 }
 
