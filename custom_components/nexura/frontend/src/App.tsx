@@ -573,6 +573,7 @@ function App() {
         return updated;
       });
       setTileToEdit(null);
+    } else {
       // Add new tile
       setTiles(prev => [...prev, newTile]);
       const dims = getSizeDimensions(newTile.size);
@@ -586,17 +587,17 @@ function App() {
         const viewLayout = updated[targetRoom] || { desktop: [], tablet: [], mobile: [] };
 
         // Find the first available slot for each breakpoint in the target room
-        const desktopSlot = findFirstAvailableSlot(viewLayout.desktop, dims.w, dims.h, 12);
+        const desktopSlot = findFirstAvailableSlot(viewLayout.desktop || [], dims.w, dims.h, 12);
         const tabletW = Math.min(dims.w, 8);
-        const tabletSlot = findFirstAvailableSlot(viewLayout.tablet, tabletW, dims.h, 8);
+        const tabletSlot = findFirstAvailableSlot(viewLayout.tablet || [], tabletW, dims.h, 8);
         const mobileW = Math.min(dims.w, 4);
-        const mobileSlot = findFirstAvailableSlot(viewLayout.mobile, mobileW, dims.h, 4);
+        const mobileSlot = findFirstAvailableSlot(viewLayout.mobile || [], mobileW, dims.h, 4);
 
         updated[targetRoom] = {
           ...viewLayout,
-          desktop: [...viewLayout.desktop, { id: newTile.id, ...desktopSlot, w: dims.w, h: dims.h }],
-          tablet: [...viewLayout.tablet, { id: newTile.id, ...tabletSlot, w: tabletW, h: dims.h }],
-          mobile: [...viewLayout.mobile, { id: newTile.id, ...mobileSlot, w: mobileW, h: dims.h }],
+          desktop: [...(viewLayout.desktop || []), { id: newTile.id, ...desktopSlot, w: dims.w, h: dims.h }],
+          tablet: [...(viewLayout.tablet || []), { id: newTile.id, ...tabletSlot, w: tabletW, h: dims.h }],
+          mobile: [...(viewLayout.mobile || []), { id: newTile.id, ...mobileSlot, w: mobileW, h: dims.h }],
         };
 
         // If the tile is marked as favorite AND we didn't just add it to the 'favorites' layout
