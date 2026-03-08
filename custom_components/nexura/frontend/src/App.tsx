@@ -449,8 +449,8 @@ function App() {
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 1, // Start dragging immediately if moved 1px (since it's a dedicated handle)
-        // For mobile long-press on handle, we can keep it snappy
+        delay: 250,
+        tolerance: 5,
       },
     }),
     useSensor(KeyboardSensor, {

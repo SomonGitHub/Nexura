@@ -100,74 +100,101 @@
     padding: 0.75rem;
 }
 
-.edit-actions {
+.tile-glass-overlay {
     position: absolute;
-    top: 6px;
-    right: 6px;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
     display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 20;
+    border-radius: inherit;
+}
+
+body.theme-light .tile-glass-overlay {
+    background: rgba(255, 255, 255, 0.6);
+}
+
+.glass-actions-grid {
+    display: flex;
+    gap: 16px;
     flex-wrap: wrap;
-    justify-content: flex-end;
-    gap: 4px;
-    z-index: 10;
-    opacity: 0.9;
-    transition: all 0.3s ease;
-    max-width: calc(100% - 12px);
+    justify-content: center;
+    align-items: center;
+    max-width: 80%;
 }
 
-.bento-tile:hover .edit-actions {
-    opacity: 1;
-    transform: translateY(-1px);
-}
-
-.btn-tile-action {
-    background: rgba(30, 30, 40, 0.85);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 6px;
-    width: 24px;
-    height: 24px;
+.glass-action-btn {
+    background: rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 16px;
+    width: 52px;
+    height: 52px;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    font-size: 10px;
     color: white;
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-    backdrop-filter: blur(4px);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    backdrop-filter: blur(10px);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
 }
 
-body.theme-light .btn-tile-action {
+body.theme-light .glass-action-btn {
     background: rgba(255, 255, 255, 0.9);
     border: 1px solid rgba(0, 0, 0, 0.1);
     color: #164E63;
-    box-shadow: 0 2px 10px rgba(8, 145, 178, 0.15);
+    box-shadow: 0 4px 15px rgba(8, 145, 178, 0.15);
 }
 
-.tile-small .btn-tile-action,
-.tile-mini .btn-tile-action {
-    width: 22px;
-    height: 22px;
-    font-size: 9px;
+/* Scaling down slightly on smaller tiles */
+.tile-small .glass-action-btn,
+.tile-mini .glass-action-btn {
+    width: 44px;
+    height: 44px;
 }
 
-.btn-tile-action.btn-delete:hover {
+/* Hover effects */
+.glass-action-btn:hover {
+    transform: translateY(-2px) scale(1.05);
+    background: rgba(255, 255, 255, 0.25);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+}
+
+body.theme-light .glass-action-btn:hover {
+    background: #ffffff;
+    box-shadow: 0 6px 20px rgba(8, 145, 178, 0.25);
+}
+
+/* Specific colors for actions on hover */
+.glass-action-btn.btn-delete:hover {
     background: rgba(255, 71, 87, 0.9);
     border-color: #ff4757;
+    color: white;
 }
 
-.btn-tile-action.btn-resize:hover {
+.glass-action-btn.btn-resize:hover {
     background: rgba(30, 144, 255, 0.9);
     border-color: #1e90ff;
+    color: white;
 }
 
-.btn-tile-action.btn-edit:hover {
+.glass-action-btn.btn-edit:hover {
     background: rgba(8, 145, 178, 0.9);
     border-color: #0891b2;
+    color: white;
 }
 
-.btn-tile-action.btn-favorite:hover {
+.glass-action-btn.is-favorite {
+    color: #ffaa00;
+}
+
+.glass-action-btn:hover:has(svg[fill="currentColor"]) {
     background: rgba(255, 170, 0, 0.9);
     border-color: #ffaa00;
+    color: white;
 }
 
 /* Tile Sizes - Control Span in the Grid */

@@ -1,6 +1,7 @@
-import React from 'react';
-import { motion } from 'framer-motion';
+import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useSortable } from '@dnd-kit/sortable';
+import { Pencil, Maximize2, Star, Trash2 } from 'lucide-react';
 import { DynamicIcon } from '../DynamicIcon/DynamicIcon';
 import { AnimatedHalo } from '../AnimatedHalo/AnimatedHalo';
 import { getHaloType } from '../../hooks/useTileStatus';
@@ -147,6 +148,8 @@ const BentoTileInner: React.FC<BentoTileProps> = ({
     tileTheme,
     entityState,
 }) => {
+    const [isOverlayActive, setIsOverlayActive] = useState(false);
+
     // Determine halo type based on entity status or forced override
     const haloType = forcedHaloType || getHaloType(entityId, hassEntities);
     const isSpacer = type === 'spacer';
@@ -190,7 +193,7 @@ const BentoTileInner: React.FC<BentoTileProps> = ({
             ref={setNodeRef}
             style={style}
             {...attributes}
-            // listeners are removed from here and moved to the handle
+            {...(isEditMode && !isOverlay ? listeners : {})}
             layout={enableLayoutAnim}
             initial={false}
             animate={{}}
@@ -200,53 +203,63 @@ const BentoTileInner: React.FC<BentoTileProps> = ({
                 damping: 30,
             }}
             className={`bento-tile ${layout ? '' : sizeClass} ${isSpacer ? 'tile-spacer' : ''} ${isDragging ? 'dragging' : ''} ${isDragging && !isOverlay ? 'is-dragging-original' : ''} ${isOverlay ? 'overlay' : ''} ${isEditMode ? 'edit-mode' : ''} ${noPadding ? 'no-padding' : ''} ${layout?.hidden ? 'tile-hidden' : ''} ${themeClass} ${stateClass} ${className}`}
-            whileHover={!isOverlay && !isDragging && !isAnyDragging ? { scale: 1.02 } : undefined}
+            whileHover={!isOverlay && !isDragging && !isAnyDragging && !isEditMode ? { scale: 1.02 } : undefined}
             whileTap={!isOverlay && !isDragging && !isEditMode ? { scale: 0.98 } : undefined}
-            onClick={!isEditMode ? onClick : undefined}
+            onClick={() => {
+                if (isEditMode) {
+                    setIsOverlayActive(true);
+                } else if (onClick) {
+                    onClick();
+                }
+            }}
             onContextMenu={(e) => isEditMode ? e.preventDefault() : undefined}
         >
             {!isSpacer && <AnimatedHalo type={haloType} />}
 
-            {isEditMode && !isOverlay && (
-                <div className="edit-actions">
-                    <button
-                        className="btn-tile-action btn-drag-handle"
-                        {...listeners}
-                        title="Déplacer"
-                        style={{ touchAction: 'none' }} // Crucial: only the handle blocks touch default
+            <AnimatePresence>
+                {isEditMode && isOverlayActive && !isOverlay && !isDragging && (
+                    <motion.div
+                        className="tile-glass-overlay"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.2 }}
+                        onClick={(e) => { e.stopPropagation(); setIsOverlayActive(false); }}
+                        onPointerDown={(e) => e.stopPropagation()}
                     >
-                        ⠿
-                    </button>
-                    <button
-                        className={`btn-tile-action btn-favorite ${isFavorite ? 'is-favorite' : ''}`}
-                        onPointerDown={(e) => { e.stopPropagation(); onToggleFavorite?.(); }}
-                        title={isFavorite ? "Retirer des favoris" : "Ajouter aux favoris"}
-                    >
-                        {isFavorite ? '⭐' : '☆'}
-                    </button>
-                    <button
-                        className="btn-tile-action btn-edit"
-                        onPointerDown={(e) => { e.stopPropagation(); onEdit?.(); }}
-                        title="Modifier"
-                    >
-                        ✏️
-                    </button>
-                    <button
-                        className="btn-tile-action btn-resize"
-                        onPointerDown={(e) => { e.stopPropagation(); onResize?.(); }}
-                        title="Redimensionner"
-                    >
-                        📐
-                    </button>
-                    <button
-                        className="btn-tile-action btn-delete"
-                        onPointerDown={(e) => { e.stopPropagation(); onDelete?.(); }}
-                        title="Supprimer"
-                    >
-                        ❌
-                    </button>
-                </div>
-            )}
+                        <div className="glass-actions-grid">
+                            <button
+                                className={`glass-action-btn ${isFavorite ? 'is-favorite' : ''}`}
+                                onClick={(e) => { e.stopPropagation(); onToggleFavorite?.(); setIsOverlayActive(false); }}
+                                title={isFavorite ? "Retirer des favoris" : "Ajouter aux favoris"}
+                            >
+                                <Star size={24} fill={isFavorite ? "currentColor" : "none"} />
+                            </button>
+                            <button
+                                className="glass-action-btn btn-edit"
+                                onClick={(e) => { e.stopPropagation(); onEdit?.(); setIsOverlayActive(false); }}
+                                title="Modifier"
+                            >
+                                <Pencil size={24} />
+                            </button>
+                            <button
+                                className="glass-action-btn btn-resize"
+                                onClick={(e) => { e.stopPropagation(); onResize?.(); setIsOverlayActive(false); }}
+                                title="Redimensionner"
+                            >
+                                <Maximize2 size={24} />
+                            </button>
+                            <button
+                                className="glass-action-btn btn-delete"
+                                onClick={(e) => { e.stopPropagation(); onDelete?.(); setIsOverlayActive(false); }}
+                                title="Supprimer"
+                            >
+                                <Trash2 size={24} />
+                            </button>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
             {!isSpacer && !hideHeader && (
                 <div className="tile-header">
