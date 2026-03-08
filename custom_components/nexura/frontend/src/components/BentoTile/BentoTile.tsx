@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSortable } from '@dnd-kit/sortable';
-import { Pencil, Maximize2, Star, Trash2 } from 'lucide-react';
+import { Pencil, Maximize2, Star, Trash2, GripHorizontal } from 'lucide-react';
 import { DynamicIcon } from '../DynamicIcon/DynamicIcon';
 import { AnimatedHalo } from '../AnimatedHalo/AnimatedHalo';
 import { getHaloType } from '../../hooks/useTileStatus';
@@ -193,7 +193,6 @@ const BentoTileInner: React.FC<BentoTileProps> = ({
             ref={setNodeRef}
             style={style}
             {...attributes}
-            {...(isEditMode && !isOverlay ? listeners : {})}
             layout={enableLayoutAnim}
             initial={false}
             animate={{}}
@@ -215,6 +214,19 @@ const BentoTileInner: React.FC<BentoTileProps> = ({
             onContextMenu={(e) => isEditMode ? e.preventDefault() : undefined}
         >
             {!isSpacer && <AnimatedHalo type={haloType} />}
+
+            {isEditMode && !isOverlay && !isOverlayActive && (
+                <div
+                    className="drag-handle-premium"
+                    {...listeners}
+                    onClick={(e) => {
+                        e.stopPropagation(); // Prevents opening the overlay when clicking the handle
+                    }}
+                    style={{ touchAction: 'none' }}
+                >
+                    <GripHorizontal size={20} />
+                </div>
+            )}
 
             <AnimatePresence>
                 {isEditMode && isOverlayActive && !isOverlay && !isDragging && (

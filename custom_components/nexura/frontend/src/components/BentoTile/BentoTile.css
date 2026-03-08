@@ -100,6 +100,43 @@
     padding: 0.75rem;
 }
 
+.drag-handle-premium {
+    position: absolute;
+    top: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 32px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: rgba(255, 255, 255, 0.4);
+    cursor: grab;
+    z-index: 10;
+    transition: all 0.2s ease;
+    border-radius: 12px;
+    background: transparent;
+}
+
+body.theme-light .drag-handle-premium {
+    color: rgba(0, 0, 0, 0.3);
+}
+
+.drag-handle-premium:hover {
+    color: rgba(255, 255, 255, 0.9);
+    background: rgba(255, 255, 255, 0.1);
+}
+
+body.theme-light .drag-handle-premium:hover {
+    color: rgba(0, 0, 0, 0.7);
+    background: rgba(0, 0, 0, 0.05);
+}
+
+.drag-handle-premium:active {
+    cursor: grabbing;
+    background: rgba(255, 255, 255, 0.2);
+}
+
 .tile-glass-overlay {
     position: absolute;
     inset: 0;
