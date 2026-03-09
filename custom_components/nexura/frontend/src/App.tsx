@@ -581,8 +581,12 @@ function App() {
       setLayouts(prev => {
         const updated = { ...prev };
         // The target room is where the layout should be updated.
-        // If no room is specified or it's 'home' / something default, we use activeView or room.
         const targetRoom = newTile.room || activeView;
+
+        // Fix: If we are adding from the favorites view, ensure the tile is marked as favorite
+        if (activeView === 'favorites') {
+          newTile.isFavorite = true;
+        }
 
         const viewLayout = updated[targetRoom] || { desktop: [], tablet: [], mobile: [] };
 
@@ -714,7 +718,7 @@ function App() {
   const handleToggle = useCallback((id: string, newState: boolean, entityId?: string) => {
     setTiles(prev => {
       const updated = prev.map(t => t.id === id ? { ...t, isOn: newState } : t);
-      const dataToSave = { layout: updated, title: dashboardTitle };
+      const dataToSave = { layout: updated, layouts: layouts, title: dashboardTitle };
       callHAWebSocket('nexura/board/save', dataToSave).catch((e: unknown) => console.error(e));
       localStorage.setItem(STORAGE_KEY, JSON.stringify(dataToSave));
       return updated;
@@ -725,12 +729,12 @@ function App() {
       const service = newState ? 'turn_on' : 'turn_off';
       executeService(hassConnection, domain, service, { entity_id: entityId });
     }
-  }, [dashboardTitle, hassConnection, callHAWebSocket]);
+  }, [dashboardTitle, layouts, hassConnection, callHAWebSocket]);
 
   const handleSliderChange = (id: string, newValue: number, entityId?: string) => {
     setTiles(prev => {
       const updated = prev.map(t => t.id === id ? { ...t, value: newValue } : t);
-      const dataToSave = { layout: updated, title: dashboardTitle };
+      const dataToSave = { layout: updated, layouts: layouts, title: dashboardTitle };
       callHAWebSocket('nexura/board/save', dataToSave).catch((e: unknown) => console.error(e));
       localStorage.setItem(STORAGE_KEY, JSON.stringify(dataToSave));
       return updated;
@@ -823,7 +827,8 @@ function App() {
       if (activeView === 'favorites') {
         if (combined.isFavorite) result.push(combined);
       } else if (activeView === 'Inconnue') {
-        if (!combined.room || combined.room.trim() === '') result.push(combined);
+        // Show if no room, or if room is explicitly 'Inconnue'
+        if (!combined.room || combined.room.trim() === '' || combined.room === 'Inconnue') result.push(combined);
       } else if (combined.room === activeView) {
         result.push(combined);
       }

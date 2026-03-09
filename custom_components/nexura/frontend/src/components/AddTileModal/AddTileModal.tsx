@@ -37,8 +37,7 @@ export const AddTileModal: React.FC<AddTileModalProps> = ({ isOpen, onClose, onA
             setType('info');
             setSize('small');
             setEntityId('');
-            setRoom(defaultRoom || '');
-            setTileTheme('');
+            setRoom(defaultRoom === 'Inconnue' ? '' : (defaultRoom || ''));
         }
     }, [tileToEdit, isOpen, defaultRoom]);
 
