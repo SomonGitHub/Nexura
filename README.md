@@ -33,12 +33,40 @@ Nexura est une intégration personnalisée (Custom Component) pour Home Assistan
     </td>
   </tr>
 </table>
+*   🚨 Nouveau systeme d'alerte pour vous prévenir que quelque chose cloche dans votre pièce !
 <p align="center">
-  <img src="https://raw.githubusercontent.com/SomonGitHub/hacs-nexura/master/docs/images/Capture d'écran Nexura 3.png" alt="Nexura Dashboard Desktop View" width="100%"/>
+  <img src="https://github.com/user-attachments/assets/4b344d5c-9e68-415b-8530-b0cd2270e74a" alt="Nexura Dashboard alert" width="10%"/>
 </p>
 
+
 *   📱 **Agencements Indépendants (Multi-Layout)** : Nexura enregistre la disposition de vos tuiles séparément pour vos écrans de **Bureau**, **Tablette** et **Mobile**. Ce que vous modifiez sur votre téléphone n'affecte pas l'arrangement de votre grand écran mural !
-*   ⚡ **Drag and Drop**
+<table>
+  <tr>
+    <td width="33%">
+      <b>Bureau</b><br>
+      <img src="https://github.com/user-attachments/assets/48099c92-b1b7-46fd-8a53-f821baca6915" alt="Nexura theme dark"/>
+    </td>
+    <td width="33%">
+      <b>Tablette 1024</b><br>
+      <p align="center">
+        <img src="https://github.com/user-attachments/assets/811fa97d-7fdc-477f-8047-232f6cfe4ab6" alt="Nexura theme light"/>
+      </p>
+    </td>
+    <td width="33%">
+      <b>Mobile 760</b><br>
+      <p align="center">
+        <img src="https://github.com/user-attachments/assets/6ab477de-11de-4c7a-8411-551cb019d57f" alt="nature" />
+      </p>
+    </td>
+  </tr>
+</table>
+
+*   ⚡ **Drag and Drop** Vous êtes libre ! placer vos tuiles ou vous le voulez !
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/dc609749-1dfb-4851-94f8-7e6e25f87373" alt="Nexura Dashboard Desktop View" width="50%"/>
+</p>
+
+
 *   🪄 **Mode Édition Avancé** : Modifiez la position de vos tuiles, changez leur taille (Default, Wide, Tall, Large) ou masquez-les spécifiquement pour l'appareil que vous utilisez actuellement.
 *   🌡️ **Tuiles Riches et Dynamiques** :
     *   Lumières & Prises (Toggles tactiles)
@@ -46,36 +74,12 @@ Nexura est une intégration personnalisée (Custom Component) pour Home Assistan
     *   Variateurs (Sliders de valeurs précis)
     *   Météo
     *   Volets Roulants & Portes/Fenêtres (Contrôle précis et affichage de l'état ouvert/fermé)
-*   🎨 **Design "Glassmorphism" & Thèmes** : Support complet des thèmes intégrés Home Assistant (Clair, Sombre, ou Auto).
+    *   Scéne
+    *   Média
+    *   Gauge
 *   ✨ **Halos Animés** : Les tuiles s'éclairent d'un léger halo de couleur qui "respire" de façon fluide, reflétant l'état de l'appareil (Bleu pour le refroidissement, Orange/Rouge pour le chaud, Vert pastel pour les capteurs d'air, etc.).
 *   🖥️ **Mode "Immersion" (Plein Écran)** : Lancez le mode plein écran pour les affichages sur borne ou tablette murale. Complété par un mode d'économie d'écran s'activant automatiquement après inactivité.
 *   🚪 **Filtrage par Pièces** : Utilisez la barre latérale ("Favoris" ou par "Pièce") pour filtrer dynamiquement vos tuiles et réduire le bruit visuel. Longs textes gérés élégamment avec une animation de défilement textuel (Marquee).
-
----
-
-## 📸 Aperçus
-
-<table>
-  <tr>
-    <td width="50%">
-      <b>Mode Bureau / Tablette (Édition)</b><br>
-      Redimensionnez (📐), Masquez (❌), ou Déplacez (⠿) vos entités facilement.
-      <br><br>
-      <img src="https://raw.githubusercontent.com/SomonGitHub/hacs-nexura/master/docs/images/Capture d'écran Nexura 2.png" alt="Nexura Desktop Edit Mode"/>
-    </td>
-    <td width="50%">
-      <b>Affichage Mobile Adapté</b><br>
-      Une colonne claire, fluide, et indépendante de votre grand écran !
-      <br><br>
-      <p align="center">
-        <img src="https://raw.githubusercontent.com/SomonGitHub/hacs-nexura/master/docs/images/Nexura mobile.png" alt="Nexura Mobile View" width="250"/>
-      </p>
-    </td>
-  </tr>
-</table>
-<p align="center">
-  <img src="https://raw.githubusercontent.com/SomonGitHub/hacs-nexura/master/docs/images/Capture d'écran Nexura 3.png" alt="Nexura Dashboard Desktop View" width="100%"/>
-</p>
 
 ---
 
