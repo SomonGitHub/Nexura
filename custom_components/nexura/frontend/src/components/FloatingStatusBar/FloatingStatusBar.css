@@ -1,0 +1,123 @@
+.floating-status-bar {
+    position: absolute;
+    top: 80px;
+    /* juste sous le header */
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    z-index: 100;
+}
+
+.status-pill {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 30px;
+    padding: 8px 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: white;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    transition: background 0.2s;
+}
+
+.status-pill:hover {
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.status-pill-icon {
+    color: #ffcc00;
+    /* Jaune pour les lumières allumées */
+}
+
+.status-details-panel {
+    margin-top: 10px;
+    background: rgba(30, 30, 30, 0.8);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px;
+    padding: 16px;
+    width: 300px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.status-details-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding-bottom: 8px;
+}
+
+.status-details-header h3 {
+    margin: 0;
+    font-size: 1rem;
+    color: white;
+}
+
+.btn-close-panel {
+    background: none;
+    border: none;
+    color: rgba(255, 255, 255, 0.5);
+    cursor: pointer;
+    padding: 4px;
+}
+
+.btn-close-panel:hover {
+    color: white;
+}
+
+.status-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+}
+
+.status-item span {
+    color: white;
+    font-size: 0.9rem;
+}
+
+.btn-toggle-off {
+    background: rgba(255, 255, 255, 0.1);
+    border: none;
+    border-radius: 6px;
+    color: white;
+    padding: 6px 12px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    transition: background 0.2s;
+}
+
+.btn-toggle-off:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.btn-turn-off-all {
+    margin-top: 8px;
+    background: rgba(255, 59, 48, 0.2);
+    border: 1px solid rgba(255, 59, 48, 0.4);
+    color: #ff3b30;
+    border-radius: 8px;
+    padding: 10px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: bold;
+    transition: all 0.2s;
+}
+
+.btn-turn-off-all:hover {
+    background: rgba(255, 59, 48, 0.3);
+}
