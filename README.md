@@ -33,7 +33,9 @@ Nexura est une intégration personnalisée (Custom Component) pour Home Assistan
     </td>
   </tr>
 </table>
+
 *   🌤️ La météo sur votre dashboard : rayon du soleil, pluie, nuages ! tout est là !
+
 *   🚨 Nouveau systeme d'alerte pour vous prévenir que quelque chose cloche dans votre pièce !
 <p align="center">
   <img src="https://github.com/user-attachments/assets/4b344d5c-9e68-415b-8530-b0cd2270e74a" alt="Nexura Dashboard alert" width="10%"/>
