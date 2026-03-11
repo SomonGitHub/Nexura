@@ -68,8 +68,11 @@ Nexura est une intégration personnalisée (Custom Component) pour Home Assistan
 <p align="center">
   <img src="https://github.com/user-attachments/assets/dc609749-1dfb-4851-94f8-7e6e25f87373" alt="Nexura Dashboard Desktop View" width="50%"/>
 </p>
+
 *    📺 Un mode economiseur d'écran avec l'heure et vos alertes !
+
 *   🪄 **Mode Édition Avancé** : Modifiez la position de vos tuiles, changez leur taille (Default, Wide, Tall, Large) ou masquez-les spécifiquement pour l'appareil que vous utilisez actuellement.
+
 *   🌡️ **Tuiles Riches et Dynamiques** :
     *   Lumières & Prises (Toggles tactiles)
     *   Capteurs (Températures, Humidité avec mini-graphiques en fond)
@@ -79,8 +82,11 @@ Nexura est une intégration personnalisée (Custom Component) pour Home Assistan
     *   Scéne
     *   Média
     *   Gauge
+
 *   ✨ **Halos Animés** : Les tuiles s'éclairent d'un léger halo de couleur qui "respire" de façon fluide, reflétant l'état de l'appareil (Bleu pour le refroidissement, Orange/Rouge pour le chaud, Vert pastel pour les capteurs d'air, etc.).
+
 *   🖥️ **Mode "Immersion" (Plein Écran)** : Lancez le mode plein écran pour les affichages sur borne ou tablette murale. Complété par un mode d'économie d'écran s'activant automatiquement après inactivité.
+
 *   🚪 **Filtrage par Pièces** : Utilisez la barre latérale ("Favoris" ou par "Pièce") pour filtrer dynamiquement vos tuiles et réduire le bruit visuel. Longs textes gérés élégamment avec une animation de défilement textuel (Marquee).
 
 ---
