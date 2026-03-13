@@ -1,0 +1,130 @@
+/* ============================================================
+ * PresenceContent — Specialized UI for motion/presence sensors.
+ * Features a radar-like ripple effect and glassmorphism style.
+ * ============================================================ */
+
+ .presence-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    padding: 10px;
+    position: relative;
+    overflow: hidden;
+}
+
+.presence-visual {
+    position: relative;
+    width: 60px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 15px;
+}
+
+.radar-circle {
+    position: absolute;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 50%;
+}
+
+.circle-1 { width: 30px; height: 30px; }
+.circle-2 { width: 50px; height: 50px; }
+.circle-3 { width: 70px; height: 70px; }
+
+.radar-ripple {
+    position: absolute;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: radial-gradient(circle, var(--accent-color) 0%, transparent 70%);
+    opacity: 0.3;
+}
+
+.presence-content.is-detected .radar-ripple {
+    background: radial-gradient(circle, #ffcc00 0%, transparent 70%);
+}
+
+.radar-dot {
+    position: relative;
+    width: 12px;
+    height: 12px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.dot-inner {
+    width: 6px;
+    height: 6px;
+    background: var(--text-secondary);
+    border-radius: 50%;
+    transition: all 0.5s ease;
+}
+
+.is-detected .dot-inner {
+    background: #ffcc00;
+    box-shadow: 0 0 15px #ffcc00, 0 0 30px rgba(255, 204, 0, 0.4);
+}
+
+.presence-info-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    width: 100%;
+}
+
+.presence-info {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.presence-status {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.is-detected .presence-status {
+    color: #ffcc00;
+    text-shadow: 0 0 10px rgba(255, 204, 0, 0.3);
+}
+
+.presence-time {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    opacity: 0.6;
+}
+
+.presence-separator {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    opacity: 0.3;
+}
+
+.presence-label {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-secondary);
+    opacity: 0.5;
+    text-align: center;
+}
+
+/* Theme light adjustments */
+body.theme-light .radar-circle {
+    border-color: rgba(0, 0, 0, 0.05);
+}
+
+body.theme-light .radar-dot {
+    background: rgba(0, 0, 0, 0.1);
+}

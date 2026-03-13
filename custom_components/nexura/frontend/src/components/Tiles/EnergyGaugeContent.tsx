@@ -6,7 +6,7 @@
  * green (low) through orange (mid) to red (high).
  *
  * @param value — Current power in watts
- * @param maxValue — Maximum expected power in watts (default 9000)
+ * @param maxValue — Maximum expected power in watts (default 5000)
  * @param unit — Display unit (default "W")
  * @param label — Label below the value (default "Consommation")
  */
@@ -17,7 +17,7 @@ import './EnergyGaugeContent.css';
 interface EnergyGaugeContentProps {
     /** Current power value in watts */
     value: number;
-    /** Maximum power for the gauge scale (default 9000W) */
+    /** Maximum power for the gauge scale (default 5000W) */
     maxValue?: number;
     /** Display unit (default "W") */
     unit?: string;
@@ -32,7 +32,7 @@ const formatPower = (watts: number, unit: string): { value: string; unit: string
     if (unit === 'W' && Math.abs(watts) >= 1000) {
         return { value: (watts / 1000).toFixed(1), unit: 'kW' };
     }
-    return { value: Math.round(watts).toString(), unit };
+    return { value: watts.toFixed(1), unit };
 };
 
 /**
@@ -63,7 +63,7 @@ const getArcColor = (percent: number): string => {
  */
 export const EnergyGaugeContent: React.FC<EnergyGaugeContentProps> = ({
     value,
-    maxValue = 9000,
+    maxValue = 5000,
     unit = 'W',
     label,
 }) => {

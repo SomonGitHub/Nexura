@@ -1,8 +1,9 @@
 import React from 'react';
 import type { HassEntities } from 'home-assistant-js-websocket';
-import type { TileData, TileType, TileTheme } from '../../App';
+import type { TileData, TileType, TileTheme, VisibilityOperator, VisibilityRule, VisibilityRuleType } from '../../App';
 import type { TileSize } from '../BentoTile/BentoTile';
 import { useTranslation } from 'react-i18next';
+import { animate } from 'animejs';
 import './AddTileModal.css';
 
 interface AddTileModalProps {
@@ -25,6 +26,39 @@ export const AddTileModal: React.FC<AddTileModalProps> = ({ isOpen, onClose, onA
     const [searchTerm, setSearchTerm] = React.useState('');
     const [tileTheme, setTileTheme] = React.useState<TileTheme | ''>('');
 
+    // Predictive Tile Visibility Rule States
+    const [useVisibilityRule, setUseVisibilityRule] = React.useState(false);
+    const [visibilityRules, setVisibilityRules] = React.useState<VisibilityRule[]>([]);
+    const [scanningRuleIndex, setScanningRuleIndex] = React.useState<number | null>(null);
+    const [ruleSearchTerm, setRuleSearchTerm] = React.useState('');
+    const modalRef = React.useRef<HTMLDivElement>(null);
+    const contentRef = React.useRef<HTMLDivElement>(null);
+
+    React.useEffect(() => {
+        if (isOpen) {
+            // Premium entrance with Anime.js
+            if (modalRef.current) {
+                animate(modalRef.current, {
+                    opacity: [0, 1],
+                    duration: 400,
+                    easing: 'easeOutCubic'
+                });
+            }
+
+            if (contentRef.current) {
+                animate(contentRef.current, {
+                    scale: [0.85, 1],
+                    opacity: [0, 1],
+                    translateY: [40, 0],
+                    duration: 600,
+                    easing: 'easeOutElastic(1, .8)',
+                    delay: 100
+                });
+            }
+        }
+    }, [isOpen]);
+
+
     React.useEffect(() => {
         if (tileToEdit && isOpen) {
             setTitle(tileToEdit.title || '');
@@ -33,6 +67,20 @@ export const AddTileModal: React.FC<AddTileModalProps> = ({ isOpen, onClose, onA
             setEntityId(tileToEdit.entityId || '');
             setRoom(tileToEdit.room || '');
             setTileTheme(tileToEdit.tileTheme || '');
+            
+            if (tileToEdit.visibilityRules || tileToEdit.visibilityRule) {
+                setUseVisibilityRule(true);
+                const rules: VisibilityRule[] = tileToEdit.visibilityRules ? [...tileToEdit.visibilityRules] : [];
+                // Migrate single rule if exists
+                if (tileToEdit.visibilityRule) {
+                    rules.push({ ...tileToEdit.visibilityRule, type: 'entity' });
+                }
+                setVisibilityRules(rules);
+            } else {
+                setUseVisibilityRule(false);
+                setVisibilityRules([{ type: 'entity', entityId: '', operator: '=', value: '' }]);
+            }
+
         } else if (isOpen) {
             // Reset for new tile
             setTitle('');
@@ -40,6 +88,9 @@ export const AddTileModal: React.FC<AddTileModalProps> = ({ isOpen, onClose, onA
             setSize('small');
             setEntityId('');
             setRoom(defaultRoom === 'Inconnue' ? '' : (defaultRoom || ''));
+            setTileTheme('');
+            setUseVisibilityRule(false);
+            setVisibilityRules([{ type: 'entity', entityId: '', operator: '=', value: '' }]);
         }
     }, [tileToEdit, isOpen, defaultRoom]);
 
@@ -64,6 +115,8 @@ export const AddTileModal: React.FC<AddTileModalProps> = ({ isOpen, onClose, onA
         // Extract current state for the selected entity if available
         const entity = entityId ? hassEntities[entityId] : null;
 
+
+
         const newTile: TileData = {
             id: Date.now().toString(),
             title,
@@ -77,8 +130,19 @@ export const AddTileModal: React.FC<AddTileModalProps> = ({ isOpen, onClose, onA
             graphData: type === 'graph' ? [] : undefined,
             tileTheme: tileTheme || undefined,
             isFavorite: tileToEdit?.isFavorite,
+            visibilityRules: useVisibilityRule ? visibilityRules.filter(r => {
+                if (r.type === 'entity') return r.entityId && r.value !== undefined;
+                if (r.type === 'time') return r.startTime && r.endTime;
+                return false;
+            }) : undefined,
         };
 
+        // Set default icon based on type
+        if (type === 'media') newTile.icon = 'Music';
+        if (type === 'scene') newTile.icon = 'Play';
+        if (type === 'camera') newTile.icon = 'Camera';
+        if (type === 'fire-alert') newTile.icon = 'Flame';
+        
         onAdd(newTile);
         onClose();
         // Reset form
@@ -88,8 +152,13 @@ export const AddTileModal: React.FC<AddTileModalProps> = ({ isOpen, onClose, onA
         setEntityId('');
         setRoom(defaultRoom || '');
         setTileTheme('');
+        setUseVisibilityRule(false);
+        setVisibilityRules([]);
+
         setIsScannerOpen(false);
         setSearchTerm('');
+        setScanningRuleIndex(null);
+        setRuleSearchTerm('');
     };
 
     const handleSelectEntity = (id: string) => {
@@ -109,6 +178,9 @@ export const AddTileModal: React.FC<AddTileModalProps> = ({ isOpen, onClose, onA
             } else if (id.startsWith('scene.')) {
                 setType('scene');
                 setSize('small');
+            } else if (id.startsWith('camera.')) {
+                setType('camera');
+                setSize('large-rect');
             }
 
             // If room is empty or matches Inconnue, try to pre-fill
@@ -131,11 +203,12 @@ export const AddTileModal: React.FC<AddTileModalProps> = ({ isOpen, onClose, onA
     }).slice(0, 50); // Increased limit to 50 for better usability without too much lag
 
     return (
-        <div className="modal-overlay">
-            <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-overlay" ref={modalRef}>
+            <div className="modal-content" ref={contentRef} onClick={(e) => e.stopPropagation()}>
                 <h2>{tileToEdit ? t('add_tile_modal.edit_title') : t('add_tile_modal.add_title')}</h2>
                 <form onSubmit={handleSubmit}>
-                    <div className="form-group entity-scanner-group">
+                    <div className="form-body">
+                        <div className="form-group entity-scanner-group">
                         <label>{t('add_tile_modal.form.entity')} (optionnel)</label>
                         <div className="input-with-action">
                             <input
@@ -214,15 +287,25 @@ export const AddTileModal: React.FC<AddTileModalProps> = ({ isOpen, onClose, onA
                             <option value="energy-gauge">{t('add_tile_modal.form.types.energy-gauge')}</option>
                             <option value="energy-flow">{t('add_tile_modal.form.types.energy-flow')}</option>
                             <option value="scene">{t('add_tile_modal.form.types.scene')}</option>
+                            <option value="camera">{t('add_tile_modal.form.types.camera', 'Caméra')}</option>
+                            <option value="fire-alert">{t('add_tile_modal.form.types.fire-alert', 'Alerte Incendie')}</option>
+
                             <option value="spacer">{t('add_tile_modal.form.types.spacer')}</option>
                         </select>
                     </div>
+
+
 
                     <div className="form-group">
                         <label>{t('add_tile_modal.form.theme')} (Optionnel)</label>
                         <select value={tileTheme} onChange={(e) => setTileTheme(e.target.value as TileTheme | '')}>
                             <option value="">Par défaut ({t('add_tile_modal.form.themes.glass')})</option>
-                            <option value="solid">{t('add_tile_modal.form.themes.solid')}</option>
+                            {(document.body.classList.contains('theme-light') || document.body.classList.contains('theme-nature') || tileTheme === 'ocean') && (
+                                <option value="ocean">{t('add_tile_modal.form.themes.ocean', 'Océan')}</option>
+                            )}
+                            {(document.body.classList.contains('theme-light') || document.body.classList.contains('theme-nature') || tileTheme === 'forest') && (
+                                <option value="forest">{t('add_tile_modal.form.themes.forest', 'Forêt')}</option>
+                            )}
                             <option value="gradient">{t('add_tile_modal.form.themes.gradient')}</option>
                             <option value="minimal">{t('add_tile_modal.form.themes.minimal')}</option>
                             <option value="neon">{t('add_tile_modal.form.themes.neon')}</option>
@@ -230,11 +313,200 @@ export const AddTileModal: React.FC<AddTileModalProps> = ({ isOpen, onClose, onA
                         </select>
                     </div>
 
+                    <div className="form-group visibility-rule-group">
+                        <label className="toggle-label">
+                            <input 
+                                type="checkbox" 
+                                checked={useVisibilityRule} 
+                                onChange={(e) => setUseVisibilityRule(e.target.checked)} 
+                            />
+                            <span>Visibilité Intelligente (Apparition Conditionnelle)</span>
+                        </label>
+                        
+                        {useVisibilityRule && (
+                            <p className="visibility-hint">
+                                Cette tuile ne s'affichera dans vos <b>Favoris</b> que si les conditions ci-dessous sont remplies. 
+                                Dans les pièces, elle restera toujours visible.
+                            </p>
+                        )}
+                        
+                        {useVisibilityRule && (
+                            <div className="rules-container">
+                                {visibilityRules.map((rule, index) => (
+                                    <div key={index} className="rule-config-box">
+                                        <div className="rule-header">
+                                            <select 
+                                                value={rule.type} 
+                                                onChange={(e) => {
+                                                    const newType = e.target.value as VisibilityRuleType;
+                                                    const newRules = [...visibilityRules];
+                                                    if (newType === 'entity') {
+                                                        newRules[index] = { type: 'entity', entityId: '', operator: '=', value: '' };
+                                                    } else {
+                                                        newRules[index] = { type: 'time', startTime: '08:00', endTime: '22:00' };
+                                                    }
+                                                    setVisibilityRules(newRules);
+                                                }}
+                                                className="rule-type-select"
+                                            >
+                                                <option value="entity">Entité</option>
+                                                <option value="time">Heure</option>
+                                            </select>
+                                            <button 
+                                                type="button" 
+                                                className="btn-remove-rule"
+                                                onClick={() => setVisibilityRules(visibilityRules.filter((_, i) => i !== index))}
+                                            >
+                                                ✕
+                                            </button>
+                                        </div>
+
+                                        {rule.type === 'entity' ? (
+                                            <>
+                                                <div className="entity-scanner-group">
+                                                    <div className="input-with-action">
+                                                        <input
+                                                            type="text"
+                                                            value={rule.entityId}
+                                                            onChange={(e) => {
+                                                                const newRules = [...visibilityRules];
+                                                                (newRules[index] as any).entityId = e.target.value;
+                                                                setVisibilityRules(newRules);
+                                                            }}
+                                                            placeholder="sensor.temperature (ID Entité)"
+                                                            required
+                                                        />
+                                                        <button
+                                                            type="button"
+                                                            className="btn-icon"
+                                                            onClick={() => setScanningRuleIndex(scanningRuleIndex === index ? null : index)}
+                                                            title="Scanner les entités"
+                                                        >
+                                                            🔍
+                                                        </button>
+                                                    </div>
+                                                    
+                                                    {scanningRuleIndex === index && (
+                                                        <div className="entity-scanner-dropdown up">
+                                                            <input
+                                                                type="text"
+                                                                className="scanner-search"
+                                                                placeholder="Rechercher une entité..."
+                                                                value={ruleSearchTerm}
+                                                                onChange={(e) => setRuleSearchTerm(e.target.value)}
+                                                                autoFocus
+                                                            />
+                                                            <div className="entity-list">
+                                                                {Object.keys(hassEntities)
+                                                                    .filter(id => {
+                                                                        const entity = hassEntities[id];
+                                                                        const friendlyName = (entity.attributes?.friendly_name || '').toLowerCase();
+                                                                        const searchLower = ruleSearchTerm.toLowerCase();
+                                                                        return id.toLowerCase().includes(searchLower) || friendlyName.includes(searchLower);
+                                                                    })
+                                                                    .slice(0, 50)
+                                                                    .map(id => (
+                                                                        <div
+                                                                            key={id}
+                                                                            className="entity-item"
+                                                                            onClick={() => { 
+                                                                                const newRules = [...visibilityRules];
+                                                                                (newRules[index] as any).entityId = id;
+                                                                                setVisibilityRules(newRules);
+                                                                                setScanningRuleIndex(null); 
+                                                                            }}
+                                                                        >
+                                                                            <span className="entity-name">{hassEntities[id].attributes?.friendly_name || id}</span>
+                                                                            <span className="entity-id">{id}</span>
+                                                                        </div>
+                                                                    ))}
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </div>
+
+                                                <div className="rule-condition-row">
+                                                    <select 
+                                                        value={rule.operator} 
+                                                        onChange={(e) => {
+                                                            const newRules = [...visibilityRules];
+                                                            (newRules[index] as any).operator = e.target.value as VisibilityOperator;
+                                                            setVisibilityRules(newRules);
+                                                        }}
+                                                    >
+                                                        <option value="=">Est égal à (=)</option>
+                                                        <option value="!=">Est différent de (!=)</option>
+                                                        <option value=">">Supérieur à (&gt;)</option>
+                                                        <option value="<">Inférieur à (&lt;)</option>
+                                                    </select>
+                                                    
+                                                    <input 
+                                                        type="text" 
+                                                        value={rule.value} 
+                                                        onChange={(e) => {
+                                                            const newRules = [...visibilityRules];
+                                                            (newRules[index] as any).value = e.target.value;
+                                                            setVisibilityRules(newRules);
+                                                        }} 
+                                                        placeholder="Valeur (ex: on, off, 22)" 
+                                                        required
+                                                    />
+                                                </div>
+                                            </>
+                                        ) : (
+                                            <div className="rule-time-row">
+                                                <div className="time-input-group">
+                                                    <label>De</label>
+                                                    <input 
+                                                        type="time" 
+                                                        value={rule.startTime}
+                                                        onChange={(e) => {
+                                                            const newRules = [...visibilityRules];
+                                                            (newRules[index] as any).startTime = e.target.value;
+                                                            setVisibilityRules(newRules);
+                                                        }}
+                                                        required
+                                                    />
+                                                </div>
+                                                <div className="time-input-group">
+                                                    <label>À</label>
+                                                    <input 
+                                                        type="time" 
+                                                        value={rule.endTime}
+                                                        onChange={(e) => {
+                                                            const newRules = [...visibilityRules];
+                                                            (newRules[index] as any).endTime = e.target.value;
+                                                            setVisibilityRules(newRules);
+                                                        }}
+                                                        required
+                                                    />
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                ))}
+                                <button 
+                                    type="button" 
+                                    className="btn-add-condition"
+                                    onClick={() => setVisibilityRules([...visibilityRules, { type: 'entity', entityId: '', operator: '=', value: '' }])}
+                                >
+                                    + Ajouter une condition
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                    </div>
+
                     <div className="modal-actions">
                         <button type="button" className="btn-secondary" onClick={onClose}>{t('add_tile_modal.cancel')}</button>
                         <div className="modal-actions-right">
                             <button type="submit" className="btn-primary">{tileToEdit ? t('add_tile_modal.save') : t('add_tile_modal.add')}</button>
-                            <a href="https://www.buymeacoffee.com/simonv" target="_blank" rel="noreferrer" className="bmc-button">
+                            <a 
+                                href="https://www.buymeacoffee.com/simonv" 
+                                target="_blank" 
+                                rel="noreferrer" 
+                                className="bmc-button"
+                            >
                                 <img
                                     src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png"
                                     alt="Buy Me A Coffee"

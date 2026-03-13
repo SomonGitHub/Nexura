@@ -79,8 +79,9 @@ const computeGradient = (): string => {
     const now = new Date();
     const currentHour = now.getHours() + now.getMinutes() / 60;
 
-    // Find which segment we're in
-    let currentIdx = 0;
+    // Find which segment we're in. Default to last segment (Night 21h-01h) 
+    // for times between 00:00 and the first stop (01:00).
+    let currentIdx = COLOR_STOPS.length - 1;
     for (let i = COLOR_STOPS.length - 1; i >= 0; i--) {
         if (currentHour >= COLOR_STOPS[i].hour) {
             currentIdx = i;

@@ -84,9 +84,9 @@ const generateRaindrops = (count: number) =>
     Array.from({ length: count }, (_, i) => ({
         id: `rain-${i}`,
         left: `${Math.random() * 100}%`,
-        animationDuration: `${1 + Math.random() * 1}s`,
+        animationDuration: `${0.8 + Math.random() * 0.8}s`,
         animationDelay: `${Math.random() * 2}s`,
-        opacity: 0.06 + Math.random() * 0.08,
+        opacity: 0.15 + Math.random() * 0.25,
     }));
 
 /**
@@ -96,10 +96,10 @@ const generateSnowflakes = (count: number) =>
     Array.from({ length: count }, (_, i) => ({
         id: `snow-${i}`,
         left: `${Math.random() * 100}%`,
-        size: `${3 + Math.random() * 3}px`,
-        animationDuration: `${4 + Math.random() * 3}s`,
-        animationDelay: `${Math.random() * 4}s`,
-        opacity: 0.08 + Math.random() * 0.1,
+        size: `${4 + Math.random() * 6}px`,
+        animationDuration: `${3 + Math.random() * 4}s`,
+        animationDelay: `${Math.random() * 5}s`,
+        opacity: 0.2 + Math.random() * 0.3,
     }));
 
 /**
@@ -113,8 +113,8 @@ const WeatherOverlayInner: React.FC<WeatherOverlayProps> = ({
     const effects = getActiveEffects(weatherState, mode);
 
     // Generate particles once with stable references
-    const raindrops = useMemo(() => generateRaindrops(30), []);
-    const snowflakes = useMemo(() => generateSnowflakes(20), []);
+    const raindrops = useMemo(() => generateRaindrops(100), []);
+    const snowflakes = useMemo(() => generateSnowflakes(60), []);
 
     // Don't render anything if no effects are active
     const hasAnyEffect = Object.values(effects).some(Boolean);

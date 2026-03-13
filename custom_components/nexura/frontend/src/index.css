@@ -27,6 +27,9 @@ body.theme-dark,
   --nav-active-bg: rgba(255, 255, 255, 0.05);
   --icon-inactive: rgba(255, 255, 255, 0.4);
   --divider-color: rgba(255, 255, 255, 0.1);
+  --tile-border-radius: 12px;
+  --modal-border-radius: 16px;
+  --pill-border-radius: 20px;
 }
 
 /* Light Theme (Liquid Glass) */
@@ -43,6 +46,9 @@ body.theme-light {
   --nav-active-bg: rgba(255, 255, 255, 0.5);
   --icon-inactive: rgba(22, 78, 99, 0.4);
   --divider-color: rgba(22, 78, 99, 0.1);
+  --tile-border-radius: 12px;
+  --modal-border-radius: 16px;
+  --pill-border-radius: 20px;
 }
 
 /* Nature Theme (Biophilic & Relaxing) */
@@ -61,6 +67,9 @@ body.theme-nature {
   /* Soft green active state */
   --icon-inactive: rgba(107, 114, 128, 0.6);
   --divider-color: rgba(229, 231, 235, 0.6);
+  --tile-border-radius: 12px;
+  --modal-border-radius: 16px;
+  --pill-border-radius: 20px;
 }
 
 body {

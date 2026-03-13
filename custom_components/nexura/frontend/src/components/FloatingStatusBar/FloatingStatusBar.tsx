@@ -20,20 +20,21 @@ interface StatusPillProps {
     itemActionLabel: string;
     onActionAll: () => void;
     actionAllLabel: string;
+    isOpen: boolean;
+    onToggle: () => void;
+    onClose: () => void;
 }
 
 const StatusPill: React.FC<StatusPillProps> = ({
-    icon, label, items, onItemAction, itemActionLabel, onActionAll, actionAllLabel
+    icon, label, items, onItemAction, itemActionLabel, onActionAll, actionAllLabel, isOpen, onToggle, onClose
 }) => {
-    const [isOpen, setIsOpen] = useState(false);
-
     if (items.length === 0) return null;
 
     return (
         <div className="status-pill-container">
             <motion.div
                 className="status-pill"
-                onClick={() => setIsOpen(!isOpen)}
+                onClick={onToggle}
                 initial={{ y: -20, opacity: 0, scale: 0.9 }}
                 animate={{ y: 0, opacity: 1, scale: 1 }}
                 exit={{ y: -20, opacity: 0, scale: 0.9 }}
@@ -55,7 +56,7 @@ const StatusPill: React.FC<StatusPillProps> = ({
                     >
                         <div className="status-details-header">
                             <h3>Détails</h3>
-                            <button className="btn-close-panel" onClick={() => setIsOpen(false)}>
+                            <button className="btn-close-panel" onClick={onClose}>
                                 <X size={18} />
                             </button>
                         </div>
@@ -71,7 +72,7 @@ const StatusPill: React.FC<StatusPillProps> = ({
                             ))}
                         </div>
 
-                        <button className="btn-turn-off-all" onClick={() => { onActionAll(); setIsOpen(false); }}>
+                        <button className="btn-turn-off-all" onClick={() => { onActionAll(); onClose(); }}>
                             {actionAllLabel}
                         </button>
                     </motion.div>
@@ -84,6 +85,12 @@ const StatusPill: React.FC<StatusPillProps> = ({
 export const FloatingStatusBar: React.FC<FloatingStatusBarProps> = ({
     tiles, hassEntities, onToggleLight, onCoverAction
 }) => {
+    const [openPillId, setOpenPillId] = useState<string | null>(null);
+
+    const handleTogglePill = (id: string) => {
+        setOpenPillId(prev => prev === id ? null : id);
+    };
+
     // Lumières allumées
     const activeLights = useMemo(() => {
         return tiles.filter(tile => {
@@ -103,6 +110,26 @@ export const FloatingStatusBar: React.FC<FloatingStatusBarProps> = ({
         });
     }, [tiles, hassEntities]);
 
+    // Volets fermés
+    const closedShutters = useMemo(() => {
+        return tiles.filter(tile => {
+            if (!tile.entityId?.startsWith('cover.')) return false;
+            const entity = hassEntities[tile.entityId];
+            // On considère comme "fermé" tout ce qui est "closed"
+            return entity && entity.state === 'closed';
+        });
+    }, [tiles, hassEntities]);
+
+
+    if (activeLights.length === 0 && activeShutters.length === 0 && closedShutters.length === 0) {
+        return null;
+    }
+
+    // Si la pilule ouverte n'a plus d'éléments, on la ferme
+    if (openPillId === 'lights' && activeLights.length === 0) setOpenPillId(null);
+    if (openPillId === 'shutters' && activeShutters.length === 0) setOpenPillId(null);
+    if (openPillId === 'closed_shutters' && closedShutters.length === 0) setOpenPillId(null);
+
     return (
         <div className="floating-status-bar">
             <StatusPill
@@ -114,6 +141,9 @@ export const FloatingStatusBar: React.FC<FloatingStatusBarProps> = ({
                 itemActionLabel="Éteindre"
                 onActionAll={() => activeLights.forEach(item => onToggleLight(item.id, false, item.entityId))}
                 actionAllLabel="Tout éteindre"
+                isOpen={openPillId === 'lights'}
+                onToggle={() => handleTogglePill('lights')}
+                onClose={() => setOpenPillId(null)}
             />
 
             <StatusPill
@@ -125,6 +155,23 @@ export const FloatingStatusBar: React.FC<FloatingStatusBarProps> = ({
                 itemActionLabel="Fermer"
                 onActionAll={() => activeShutters.forEach(item => onCoverAction('close', item.entityId))}
                 actionAllLabel="Tout fermer"
+                isOpen={openPillId === 'shutters'}
+                onToggle={() => handleTogglePill('shutters')}
+                onClose={() => setOpenPillId(null)}
+            />
+
+            <StatusPill
+                id="closed_shutters"
+                icon={<Blinds size={18} />}
+                label="volet fermé"
+                items={closedShutters}
+                onItemAction={(item) => onCoverAction('open', item.entityId)}
+                itemActionLabel="Ouvrir"
+                onActionAll={() => closedShutters.forEach(item => onCoverAction('open', item.entityId))}
+                actionAllLabel="Tout ouvrir"
+                isOpen={openPillId === 'closed_shutters'}
+                onToggle={() => handleTogglePill('closed_shutters')}
+                onClose={() => setOpenPillId(null)}
             />
         </div>
     );

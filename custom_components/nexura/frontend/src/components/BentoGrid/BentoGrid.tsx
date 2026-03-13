@@ -3,14 +3,15 @@ import './BentoGrid.css';
 
 interface BentoGridProps {
     children: React.ReactNode;
+    style?: React.CSSProperties;
 }
 
 /**
  * BentoGrid component that organizes BentoTiles in a responsive grid.
  */
-export const BentoGrid = React.forwardRef<HTMLDivElement, BentoGridProps>(({ children }, ref) => {
+export const BentoGrid = React.forwardRef<HTMLDivElement, BentoGridProps>(({ children, style }, ref) => {
     return (
-        <div className="bento-grid" ref={ref}>
+        <div className="bento-grid" ref={ref} style={style}>
             {children}
         </div>
     );

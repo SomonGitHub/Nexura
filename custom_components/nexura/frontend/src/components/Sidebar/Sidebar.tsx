@@ -1,5 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
+import { animate } from 'animejs';
 import { DynamicIcon } from '../DynamicIcon/DynamicIcon';
 import { getRoomIcon } from '../../utils/entityMapping';
 import { useTranslation } from 'react-i18next';
@@ -11,8 +12,11 @@ interface SidebarProps {
     onViewChange: (view: string) => void;
     isEditMode: boolean;
     roomAlerts?: { [key: string]: boolean };
+    roomLightStates?: { [key: string]: boolean };
     isFullScreen?: boolean;
     onToggleFullScreen?: () => void;
+    isOpen?: boolean;
+    onClose?: () => void;
 }
 
 interface NavItemProps {
@@ -21,6 +25,7 @@ interface NavItemProps {
     isActive: boolean;
     onClick: () => void;
     hasAlert?: boolean;
+    hasLightOn?: boolean;
     className?: string;
 }
 
@@ -30,6 +35,7 @@ const NavItem: React.FC<NavItemProps> = ({
     isActive,
     onClick,
     hasAlert = false,
+    hasLightOn = false,
     className = ''
 }) => {
     const labelRef = React.useRef<HTMLSpanElement>(null);
@@ -68,10 +74,18 @@ const NavItem: React.FC<NavItemProps> = ({
             onClick={onClick}
         >
             {isActive && (
-                <motion.div
-                    layoutId="active-pill"
+                <div
                     className="nav-active-bg"
-                    transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+                    ref={(el) => {
+                        if (el && isActive) {
+                            animate(el, {
+                                scale: [0.95, 1],
+                                opacity: [0.5, 1],
+                                duration: 400,
+                                easing: 'easeOutElastic(1, .8)'
+                            });
+                        }
+                    }}
                 />
             )}
             <div className="nav-item-content">
@@ -86,6 +100,13 @@ const NavItem: React.FC<NavItemProps> = ({
                             className="nav-alert-dot"
                             animate={{ scale: [1, 1.5, 1], opacity: [1, 0.5, 1] }}
                             transition={{ repeat: Infinity, duration: 2 }}
+                        />
+                    )}
+                    {hasLightOn && !hasAlert && (
+                        <motion.span
+                            className="nav-light-dot"
+                            animate={{ opacity: [0.6, 1, 0.6] }}
+                            transition={{ repeat: Infinity, duration: 1.5 }}
                         />
                     )}
                 </div>
@@ -109,13 +130,38 @@ export const Sidebar: React.FC<SidebarProps> = ({
     onViewChange,
     isEditMode,
     roomAlerts = {},
+    roomLightStates = {},
     isFullScreen = false,
     onToggleFullScreen,
+    isOpen = false,
+    onClose
 }) => {
     const { t } = useTranslation();
+    const sidebarRef = React.useRef<HTMLElement>(null);
+
+    React.useEffect(() => {
+        if (sidebarRef.current) {
+            if (isOpen && window.innerWidth <= 768) {
+                animate(sidebarRef.current, {
+                    translateX: ['-100%', '0%'],
+                    opacity: [0, 1],
+                    duration: 400,
+                    easing: 'easeOutQuart'
+                });
+            }
+        }
+    }, [isOpen]);
 
     return (
-        <aside className="sidebar-nav">
+        <aside 
+            ref={sidebarRef}
+            className={`sidebar-nav ${isOpen ? 'open' : ''}`}
+        >
+            <div className="sidebar-mobile-header">
+                <button className="btn-close-sidebar" onClick={onClose}>
+                    <DynamicIcon name="X" size={24} />
+                </button>
+            </div>
             <div className="sidebar-section">
                 <NavItem
                     label={t('favorites')}
@@ -138,6 +184,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                             isActive={activeView === room}
                             onClick={() => onViewChange(room)}
                             hasAlert={roomAlerts[room]}
+                            hasLightOn={roomLightStates[room]}
                         />
                     ))}
                 </div>

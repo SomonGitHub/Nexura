@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { animate } from 'animejs';
 import { useSortable } from '@dnd-kit/sortable';
 import { Pencil, Maximize2, Star, Trash2, GripHorizontal } from 'lucide-react';
 import { DynamicIcon } from '../DynamicIcon/DynamicIcon';
@@ -42,6 +43,8 @@ interface BentoTileProps {
     tileTheme?: TileTheme;
     /** Current entity state for dynamic theme variants */
     entityState?: string;
+    /** If the tile has conditional visibility rules */
+    isPredictive?: boolean;
 }
 
 /**
@@ -72,7 +75,8 @@ const areTilePropsEqual = (
         prev.hideHeader !== next.hideHeader ||
         prev.isAnyDragging !== next.isAnyDragging ||
         prev.tileTheme !== next.tileTheme ||
-        prev.entityState !== next.entityState
+        prev.entityState !== next.entityState ||
+        prev.isPredictive !== next.isPredictive
     ) {
         return false;
     }
@@ -147,6 +151,7 @@ const BentoTileInner: React.FC<BentoTileProps> = ({
     isAnyDragging = false,
     tileTheme,
     entityState,
+    isPredictive = false,
 }) => {
     const [isOverlayActive, setIsOverlayActive] = useState(false);
 
@@ -165,6 +170,9 @@ const BentoTileInner: React.FC<BentoTileProps> = ({
         isDragging,
     } = sortable;
 
+    const tileRef = useRef<HTMLDivElement>(null);
+
+
     const gridStyle = layout ? {
         gridColumn: `${layout.x + 1} / span ${layout.w}`,
         gridRow: `${layout.y + 1} / span ${layout.h}`,
@@ -181,10 +189,6 @@ const BentoTileInner: React.FC<BentoTileProps> = ({
 
     const sizeClass = `tile-${size}`;
 
-    // Disable layout animations during drag to reduce GPU overhead on tablets.
-    // Disable it completely unless in edit mode to prevent text content updates 
-    // from triggering expensive layout recalculations.
-    const enableLayoutAnim = isEditMode && !isDragging && !isOverlay && !isAnyDragging;
 
     // Build theme CSS class
     const themeClass = tileTheme && tileTheme !== 'glass' ? `theme-${tileTheme}` : '';
@@ -192,10 +196,13 @@ const BentoTileInner: React.FC<BentoTileProps> = ({
 
     return (
         <motion.div
-            ref={setNodeRef}
+            ref={(node) => {
+                setNodeRef(node);
+                (tileRef as any).current = node;
+            }}
             style={style}
             {...attributes}
-            layout={enableLayoutAnim}
+            layout={false} // Disabled to fix infinite loop during dragging/reordering
             initial={false}
             animate={{}}
             transition={{
@@ -203,9 +210,45 @@ const BentoTileInner: React.FC<BentoTileProps> = ({
                 stiffness: 300,
                 damping: 30,
             }}
-            className={`bento-tile ${layout ? '' : sizeClass} ${isSpacer ? 'tile-spacer' : ''} ${isScene ? 'tile-scene' : ''} ${isDragging ? 'dragging' : ''} ${isDragging && !isOverlay ? 'is-dragging-original' : ''} ${isOverlay ? 'overlay' : ''} ${isEditMode ? 'edit-mode' : ''} ${noPadding ? 'no-padding' : ''} ${layout?.hidden ? 'tile-hidden' : ''} ${themeClass} ${stateClass} ${className}`}
-            whileHover={!isOverlay && !isDragging && !isAnyDragging && !isEditMode ? { scale: 1.02 } : undefined}
-            whileTap={!isOverlay && !isDragging && !isEditMode ? { scale: 0.98 } : undefined}
+            className={`bento-tile ${layout ? '' : sizeClass} ${isSpacer ? 'tile-spacer' : ''} ${isScene ? 'tile-scene' : ''} ${isDragging ? 'dragging' : ''} ${isDragging && !isOverlay ? 'is-dragging-original' : ''} ${isOverlay ? 'overlay' : ''} ${isEditMode ? 'edit-mode' : ''} ${noPadding ? 'no-padding' : ''} ${layout?.hidden ? 'tile-hidden' : ''} ${themeClass} ${stateClass} ${isPredictive && isEditMode ? 'is-predictive' : ''} ${className}`}
+            onMouseEnter={() => {
+                if (tileRef.current && !isOverlay && !isDragging && !isAnyDragging && !isEditMode) {
+                    animate(tileRef.current, {
+                        scale: 1.02,
+                        translateY: -4,
+                        duration: 400,
+                        easing: 'easeOutElastic(1, .8)'
+                    });
+                }
+            }}
+            onMouseLeave={() => {
+                if (tileRef.current && !isOverlay && !isDragging && !isAnyDragging && !isEditMode) {
+                    animate(tileRef.current, {
+                        scale: 1,
+                        translateY: 0,
+                        duration: 300,
+                        easing: 'easeOutCubic'
+                    });
+                }
+            }}
+            onPointerDown={() => {
+                if (tileRef.current && !isOverlay && !isDragging && !isEditMode) {
+                    animate(tileRef.current, {
+                        scale: 0.98,
+                        duration: 150,
+                        easing: 'easeOutCubic'
+                    });
+                }
+            }}
+            onPointerUp={() => {
+                if (tileRef.current && !isOverlay && !isDragging && !isEditMode) {
+                    animate(tileRef.current, {
+                        scale: 1,
+                        duration: 150,
+                        easing: 'easeOutCubic'
+                    });
+                }
+            }}
             onClick={() => {
                 if (isEditMode) {
                     setIsOverlayActive(true);

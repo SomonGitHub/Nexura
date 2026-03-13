@@ -1,0 +1,86 @@
+.motion-alert-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    position: relative;
+    padding: 10px;
+    box-sizing: border-box;
+    container-type: size;
+}
+
+.motion-icon-container {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    position: relative;
+}
+
+.motion-icon-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.motion-icon {
+    width: 60cqmin;
+    height: 60cqmin;
+    stroke-width: 1.5px;
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.idle-icon {
+    color: var(--text-secondary);
+    opacity: 0.3;
+}
+
+.active-icon {
+    color: #ffcc00;
+    filter: drop-shadow(0 0 15px rgba(255, 204, 0, 0.4));
+}
+
+.wave-pulse {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background: radial-gradient(circle, #ffcc00 0%, transparent 70%);
+    pointer-events: none;
+    z-index: -1;
+}
+
+.motion-status-info {
+    margin-top: 4cqmin;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.motion-time {
+    font-size: 14cqmin;
+    font-weight: 600;
+    color: var(--text-secondary);
+    opacity: 0.6;
+    letter-spacing: 0.5px;
+}
+
+.is-active .motion-time {
+    color: #ffcc00;
+    opacity: 0.9;
+}
+
+/* Container Queries for specific sizing adjustments */
+@container (max-width: 150px) {
+    .motion-icon {
+        width: 50cqmin;
+        height: 50cqmin;
+    }
+    .motion-time {
+        font-size: 12px;
+    }
+}

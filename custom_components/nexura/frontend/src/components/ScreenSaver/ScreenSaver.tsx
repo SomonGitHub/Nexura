@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useState, useEffect, useRef } from 'react';
+import { animate, stagger } from 'animejs';
 import { DynamicIcon } from '../DynamicIcon/DynamicIcon';
 import type { HassEntities } from 'home-assistant-js-websocket';
 import './ScreenSaver.css';
@@ -27,50 +27,85 @@ export const ScreenSaver: React.FC<ScreenSaverProps> = ({ entities }) => {
 
     const formattedTime = time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     const formattedDate = time.toLocaleDateString([], { weekday: 'long', day: 'numeric', month: 'long' });
+    const overlayRef = useRef<HTMLDivElement>(null);
+    const clockRef = useRef<HTMLDivElement>(null);
+    const alertsRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        // Entrance animation
+        if (overlayRef.current) {
+            animate(overlayRef.current, {
+                opacity: [0, 1],
+                duration: 1000,
+                easing: 'easeOutCubic'
+            });
+        }
+
+        // Clock floating animation
+        if (clockRef.current) {
+            animate(clockRef.current, {
+                translateY: [-10, 10],
+                duration: 6000,
+                direction: 'alternate',
+                loop: true,
+                easing: 'easeInOutQuad'
+            });
+        }
+    }, []);
+
+    useEffect(() => {
+        // Active Alerts staggered reveal
+        if (alertsRef.current && activeAlerts.length > 0) {
+            const items = alertsRef.current.querySelectorAll('.screensaver-alert-item');
+            if (items.length > 0) {
+                animate(items, {
+                    translateY: [20, 0],
+                    opacity: [0, 1],
+                    delay: stagger(100),
+                    duration: 800,
+                    easing: 'easeOutElastic(1, .8)'
+                });
+            }
+        }
+    }, [activeAlerts.length]);
 
     return (
-        <motion.div
+        <div
             className="screensaver-overlay"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 1 }}
+            ref={overlayRef}
+            style={{ opacity: 0 }}
         >
             <div className="screensaver-content">
-                <motion.div
+                <div 
+                    ref={clockRef}
                     className="screensaver-clock"
-                    animate={{ y: [0, -10, 0] }}
-                    transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
                 >
                     <span className="time">{formattedTime}</span>
                     <span className="date">{formattedDate}</span>
-                </motion.div>
+                </div>
 
-                <AnimatePresence>
-                    {activeAlerts.length > 0 && (
-                        <motion.div
-                            className="screensaver-alerts"
-                            initial={{ y: 20, opacity: 0 }}
-                            animate={{ y: 0, opacity: 1 }}
-                        >
-                            <h3 className="alert-title">Alertes Actives</h3>
-                            <div className="alert-list">
-                                {activeAlerts.slice(0, 3).map(alert => (
-                                    <div key={alert.entity_id} className="screensaver-alert-item danger">
-                                        <DynamicIcon name="AlertTriangle" size={16} />
-                                        <span>{alert.attributes.friendly_name || alert.entity_id}</span>
-                                    </div>
-                                ))}
-                                {activeAlerts.length > 3 && (
-                                    <div className="alert-more">+{activeAlerts.length - 3} autres...</div>
-                                )}
-                            </div>
-                        </motion.div>
-                    )}
-                </AnimatePresence>
+                {activeAlerts.length > 0 && (
+                    <div
+                        ref={alertsRef}
+                        className="screensaver-alerts"
+                    >
+                        <h3 className="alert-title">Alertes Actives</h3>
+                        <div className="alert-list">
+                            {activeAlerts.slice(0, 3).map(alert => (
+                                <div key={alert.entity_id} className="screensaver-alert-item danger">
+                                    <DynamicIcon name="AlertTriangle" size={16} />
+                                    <span>{alert.attributes.friendly_name || alert.entity_id}</span>
+                                </div>
+                            ))}
+                            {activeAlerts.length > 3 && (
+                                <div className="alert-more">+{activeAlerts.length - 3} autres...</div>
+                            )}
+                        </div>
+                    </div>
+                )}
             </div>
 
             <div className="screensaver-hint">Toucher pour déverrouiller</div>
-        </motion.div>
+        </div>
     );
 };

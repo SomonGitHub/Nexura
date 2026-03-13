@@ -10,7 +10,34 @@
     z-index: 100;
     box-sizing: border-box;
     background: var(--sidebar-bg);
-    transition: var(--theme-transition);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    transition: width 0.3s ease, transform 0.3s ease, var(--theme-transition);
+}
+
+.sidebar-mobile-header {
+    display: none;
+    justify-content: flex-end;
+    padding-bottom: 1rem;
+    margin-bottom: 0.5rem;
+    border-bottom: 1px solid var(--divider-color);
+}
+
+.btn-close-sidebar {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 10px;
+}
+
+.btn-close-sidebar:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text-primary);
 }
 
 .sidebar-section {
@@ -63,7 +90,14 @@
     text-align: left;
     transition: all 0.3s ease;
     overflow: hidden;
+    outline: none;
+    -webkit-tap-highlight-color: transparent;
 }
+
+.nav-item:focus {
+    outline: none;
+}
+
 
 
 
@@ -182,6 +216,19 @@ body.theme-light .nav-item.active .nav-label {
     box-shadow: 0 0 10px rgba(255, 68, 68, 0.5);
 }
 
+/* Light Indicator Dot */
+.nav-light-dot {
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    width: 6px;
+    height: 6px;
+    background: #ffcc00;
+    border-radius: 50%;
+    border: 2px solid #0a0a1a;
+    box-shadow: 0 0 10px rgba(255, 204, 0, 0.8), 0 0 20px rgba(255, 204, 0, 0.4);
+}
+
 .sidebar-divider {
     height: 1px;
     background: linear-gradient(to right, var(--divider-color), transparent);
@@ -223,19 +270,44 @@ body.theme-light .nav-item.active .nav-label {
     margin-top: 4px;
 }
 
-@media (max-width: 900px) {
+@media (max-width: 768px) {
     .sidebar-nav {
-        width: 84px;
-        padding: 2rem 0.5rem;
+        position: fixed;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 280px;
+        z-index: 2000;
+        transform: translateX(-100%);
+        box-shadow: 20px 0 50px rgba(0, 0, 0, 0.5);
+        padding: 1.5rem;
+        background: rgba(10, 10, 26, 0.95); /* Solid Dark background for readability */
+        backdrop-filter: blur(30px) saturate(150%);
+        -webkit-backdrop-filter: blur(30px) saturate(150%);
+        border-right: 1px solid var(--tile-border);
+    }
+
+    .sidebar-nav.open {
+        transform: translateX(0);
+    }
+
+    .sidebar-mobile-header {
+        display: flex;
     }
 
     .nav-label,
     .sidebar-subtitle,
     .sidebar-edit-badge {
-        display: none;
+        display: block;
     }
 
     .nav-item-content {
-        justify-content: center;
+        justify-content: flex-start;
+    }
+}
+
+@media (max-width: 480px) {
+    .sidebar-nav {
+        width: 85%;
     }
 }

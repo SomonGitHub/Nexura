@@ -1,4 +1,4 @@
-import { AnimatePresence, motion } from 'framer-motion'
+import { animate, stagger, utils } from 'animejs'
 import {
   DndContext,
   KeyboardSensor,
@@ -27,7 +27,8 @@ import { SliderContent } from './components/Tiles/SliderContent'
 import { GraphContent } from './components/Tiles/GraphContent'
 import { SensorContent } from './components/Tiles/SensorContent'
 import { AddTileModal } from './components/AddTileModal/AddTileModal'
-import { Sidebar } from './components/Sidebar/Sidebar'
+import { Sidebar } from './components/Sidebar/Sidebar';
+import { DynamicIcon } from './components/DynamicIcon/DynamicIcon';
 import { ScreenSaver } from './components/ScreenSaver/ScreenSaver'
 import { WeatherContent } from './components/Tiles/WeatherContent'
 import { CoverContent } from './components/Tiles/CoverContent'
@@ -36,6 +37,10 @@ import { EnergyGaugeContent } from './components/Tiles/EnergyGaugeContent'
 import { EnergyFlowContent } from './components/Tiles/EnergyFlowContent'
 import { FloatingStatusBar } from './components/FloatingStatusBar/FloatingStatusBar'
 import { SceneContent } from './components/Tiles/SceneContent'
+import { CameraContent } from './components/Tiles/CameraContent'
+import { FireAlertContent } from './components/Tiles/FireAlertContent'
+import { MotionAlertContent } from './components/Tiles/MotionAlertContent';
+
 import { WeatherOverlay, type WeatherEffectsMode } from './components/WeatherOverlay/WeatherOverlay'
 import { getHaloType } from './hooks/useTileStatus'
 import { getAutoIcon, getAutoColor, getRoomIcon } from './utils/entityMapping'
@@ -45,9 +50,30 @@ import './components/BentoTile/BentoTile.css';
 import './components/Sidebar/Sidebar.css';
 import './App.css'
 
-export type TileType = 'info' | 'toggle' | 'slider' | 'graph' | 'cover' | 'spacer' | 'media' | 'energy-gauge' | 'energy-flow' | 'scene';
-export type TileTheme = 'glass' | 'solid' | 'gradient' | 'minimal' | 'neon' | 'frosted';
-export type Breakpoint = 'desktop' | 'tablet' | 'mobile';
+export type TileType = 'info' | 'toggle' | 'slider' | 'graph' | 'cover' | 'spacer' | 'media' | 'energy-gauge' | 'energy-flow' | 'scene' | 'camera' | 'fire-alert';
+export type TileTheme = 'glass' | 'solid' | 'gradient' | 'minimal' | 'neon' | 'frosted' | 'ocean' | 'forest';
+export type Breakpoint = 'ultra' | 'desktop' | 'tablet' | 'mobile';
+export type VisibilityOperator = '=' | '!=' | '>' | '<';
+export type VisibilityRuleType = 'entity' | 'time';
+
+export interface BaseVisibilityRule {
+  type: VisibilityRuleType;
+}
+
+export interface EntityVisibilityRule extends BaseVisibilityRule {
+  type: 'entity';
+  entityId: string;
+  operator: VisibilityOperator;
+  value: string;
+}
+
+export interface TimeVisibilityRule extends BaseVisibilityRule {
+  type: 'time';
+  startTime: string; // "HH:mm"
+  endTime: string;   // "HH:mm"
+}
+
+export type VisibilityRule = EntityVisibilityRule | TimeVisibilityRule;
 
 export interface LayoutEntry {
   id: string;
@@ -81,28 +107,20 @@ export interface TileData {
   solarEntityId?: string;
   gridEntityId?: string;
   batteryEntityId?: string;
+  
+  // Predictive Tile fields (Conditional Visibility)
+  visibilityRule?: {
+    entityId: string;
+    operator: VisibilityOperator;
+    value: string;
+  };
+  visibilityRules?: VisibilityRule[];
   batteryLevelEntityId?: string;
   // Tile theme preset
   tileTheme?: TileTheme;
 }
 
-const useBreakpoint = (): Breakpoint => {
-  const [breakpoint, setBreakpoint] = useState<Breakpoint>('desktop');
-
-  useEffect(() => {
-    const handleResize = () => {
-      if (window.innerWidth <= 767) setBreakpoint('mobile');
-      else if (window.innerWidth <= 1024) setBreakpoint('tablet');
-      else setBreakpoint('desktop');
-    };
-
-    handleResize();
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
-  return breakpoint;
-};
+const colsConfig = { ultra: 16, desktop: 14, tablet: 10, mobile: 6 };
 
 const mockGraphData = [
   { time: '10:00', value: 300 },
@@ -183,9 +201,9 @@ const getSizeDimensions = (size: TileSize = 'small'): { w: number, h: number } =
 };
 
 const migrateLayouts = (tiles: TileData[], activeView: string): ViewLayouts => {
-  const breakpoints: Breakpoint[] = ['desktop', 'tablet', 'mobile'];
-  const colsConfig = { desktop: 12, tablet: 8, mobile: 4 };
-  const result: ViewLayouts = { desktop: [], tablet: [], mobile: [] };
+  const breakpoints: Breakpoint[] = ['ultra', 'desktop', 'tablet', 'mobile'];
+  const colsConfig = { ultra: 16, desktop: 14, tablet: 10, mobile: 6 };
+  const result: ViewLayouts = { ultra: [], desktop: [], tablet: [], mobile: [] };
 
   breakpoints.forEach(bp => {
     let currentX = 0;
@@ -247,10 +265,11 @@ function App() {
 
   const [tiles, setTiles] = useState<TileData[]>([]);
   const [layouts, setLayouts] = useState<DashboardLayouts>({});
-  const breakpoint = useBreakpoint();
+  const [breakpoint, setBreakpoint] = useState<Breakpoint>('desktop');
 
   const [loading, setLoading] = useState(true);
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [predictedLayout, setPredictedLayout] = useState<LayoutEntry | null>(null);
   const [theme, setTheme] = useState<'auto' | 'dark' | 'light' | 'nature'>('auto');
   const [screensaverEnabled, setScreensaverEnabled] = useState(true);
 
@@ -263,7 +282,10 @@ function App() {
   const [isFullScreen, setIsFullScreen] = useState(false);
   const isInactive = useInactivity(120000); // 2 minutes induction period for ScreenSaver
   const [activeView, setActiveView] = useState('favorites');
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const viewContainerRef = useRef<HTMLDivElement>(null);
   const [tileToEdit, setTileToEdit] = useState<TileData | null>(null);
+  const isAnyDragging = activeId !== null;
   const gridRef = useRef<HTMLDivElement>(null);
   const [gridUnitSize, setGridUnitSize] = useState(80);
 
@@ -274,23 +296,63 @@ function App() {
     const observer = new ResizeObserver((entries) => {
       for (const entry of entries) {
         const width = entry.contentRect.width;
-        const cols = { desktop: 12, tablet: 8, mobile: 4 }[breakpoint];
-        // Gap is 1rem (16px) or 0.5rem (8px) on mobile
-        const gap = breakpoint === 'mobile' ? 8 : 16;
-        // Calculation: (Total Width - Total Gaps) / Columns
+        if (width <= 0) continue;
+
+        let bp: Breakpoint = 'desktop';
+        if (width < 720) bp = 'mobile';
+        else if (width < 1024) bp = 'tablet';
+        else if (width < 1920) bp = 'desktop';
+        else bp = 'ultra';
+
+        setBreakpoint(bp);
+
+        const cols = colsConfig[bp];
+        const gap = bp === 'mobile' ? 8 : 16;
         const unitSize = (width - (gap * (cols - 1))) / cols;
 
         if (unitSize > 0) {
           setGridUnitSize(unitSize);
-          // Update CSS variable on the grid container for CSS usage
           gridRef.current?.style.setProperty('--grid-unit-size', `${unitSize}px`);
         }
       }
     });
 
     observer.observe(gridRef.current);
-    return () => observer.disconnect();
-  }, [breakpoint]);
+
+    // Initial trigger: Ensure sizing is correct as soon as the view mounts
+    const syncSizing = () => {
+      if (!gridRef.current) return;
+      const width = gridRef.current.offsetWidth;
+      if (width <= 0) return;
+
+      let bp: Breakpoint = 'desktop';
+      if (width < 720) bp = 'mobile';
+      else if (width < 1024) bp = 'tablet';
+      else if (width < 1920) bp = 'desktop';
+      else bp = 'ultra';
+
+      setBreakpoint(bp);
+      const cols = colsConfig[bp];
+      const gap = bp === 'mobile' ? 8 : 16;
+      const unitSize = (width - (gap * (cols - 1))) / cols;
+
+      if (unitSize > 0) {
+        setGridUnitSize(unitSize);
+        gridRef.current.style.setProperty('--grid-unit-size', `${unitSize}px`);
+      }
+    };
+
+    // Run syncSizing immediately and after short delays to account for layout shifts
+    syncSizing();
+    const t1 = setTimeout(syncSizing, 100);
+    const t2 = setTimeout(syncSizing, 500);
+
+    return () => {
+      observer.disconnect();
+      clearTimeout(t1);
+      clearTimeout(t2);
+    };
+  }, [activeView, loading]);
 
   // Adaptive Ambiance settings
   const [dayNightCycle, setDayNightCycle] = useState(true);
@@ -336,6 +398,13 @@ function App() {
     ).then(conn => {
       setHassConnection(conn);
     });
+
+    // Safety timeout: If connection takes too long, force loading with fallback data
+    const timer = setTimeout(() => {
+      setHassState(prev => prev === 'connecting' ? 'error' : prev);
+    }, 3000);
+
+    return () => clearTimeout(timer);
   }, []);
 
   // Update live history when entities change
@@ -381,6 +450,41 @@ function App() {
     });
   }, [hassEntities, tiles]);
 
+  // Stabilized View Transition Animation
+  useEffect(() => {
+    if (viewContainerRef.current && !loading) {
+      const el = viewContainerRef.current;
+      
+      // Stop ongoing animations on this container and its tiles
+      utils.remove(el);
+      const childTiles = el.querySelectorAll('.bento-tile');
+      if (childTiles.length > 0) {
+        utils.remove(childTiles);
+      }
+
+      // Show container near-instantly to avoid overlapping opacity curves
+      animate(el, {
+        opacity: [0, 1],
+        duration: 50,
+        easing: 'easeOutQuad'
+      });
+
+      // Staggered entrance for each tile, ONLY if not dragging/editing
+      if (!isEditMode && !isAnyDragging) {
+        if (childTiles.length > 0) {
+          animate(childTiles, {
+            translateY: [30, 0],
+            scale: [0.9, 1],
+            opacity: [0, 1],
+            delay: stagger(40), // 40ms between each tile
+            duration: 800,
+            easing: 'easeOutElastic(1, .8)'
+          });
+        }
+      }
+    }
+  }, [activeView, loading, isEditMode, isAnyDragging]);
+
   // 2. Load Tiles when connection is ready or if it fails/remains null (standalone)
   useEffect(() => {
     const loadTiles = async () => {
@@ -414,6 +518,17 @@ function App() {
           views.forEach(view => {
             savedLayouts[view] = migrateLayouts(finalTiles, view);
           });
+        } else {
+          // New: Ensure 'ultra' breakpoint exists for all views in already migrated layouts
+          Object.keys(savedLayouts).forEach(view => {
+            if (savedLayouts[view].desktop && !savedLayouts[view].ultra) {
+              console.log(`[Nexura] Initializing 'ultra' layout for view ${view} from desktop`);
+              savedLayouts[view] = {
+                ...savedLayouts[view],
+                ultra: JSON.parse(JSON.stringify(savedLayouts[view].desktop)) // Deep clone
+              };
+            }
+          });
         }
 
         const mergedData = finalTiles.map(tile => {
@@ -434,7 +549,70 @@ function App() {
         });
 
         setTiles(mergedData);
-        setLayouts(savedLayouts);
+
+        // --- Self-Healing Mechanism (Zombie Tile Recovery) ---
+        const healedLayouts = { ...savedLayouts };
+        let wasHealed = false;
+
+        mergedData.forEach(tile => {
+            const tileRoom = (tile.room && tile.room.trim() !== '') ? tile.room : 'Inconnue';
+            const viewLayout = healedLayouts[tileRoom] || { ultra: [], desktop: [], tablet: [], mobile: [] };
+            
+            // Check if tile exists in the layout of its assigned room
+            const existsInRoom = viewLayout.desktop?.some(l => l.id === tile.id);
+            
+            if (!existsInRoom) {
+                console.warn(`[Nexura Healing] Tile ${tile.id} (${tile.title}) missing from layout ${tileRoom}. Recovering...`);
+                wasHealed = true;
+                const dims = getSizeDimensions(tile.size);
+                
+                // Calculate slots across all breakpoints
+                const ultraSlot = findFirstAvailableSlot(viewLayout.ultra || [], dims.w, dims.h, 16);
+                const desktopSlot = findFirstAvailableSlot(viewLayout.desktop || [], dims.w, dims.h, 14);
+                const tabletW = Math.min(dims.w, 10);
+                const tabletSlot = findFirstAvailableSlot(viewLayout.tablet || [], tabletW, dims.h, 10);
+                const mobileW = Math.min(dims.w, 6);
+                const mobileSlot = findFirstAvailableSlot(viewLayout.mobile || [], mobileW, dims.h, 6);
+
+                healedLayouts[tileRoom] = {
+                    ultra: [...(viewLayout.ultra || []), { id: tile.id, ...ultraSlot, w: dims.w, h: dims.h }],
+                    desktop: [...(viewLayout.desktop || []), { id: tile.id, ...desktopSlot, w: dims.w, h: dims.h }],
+                    tablet: [...(viewLayout.tablet || []), { id: tile.id, ...tabletSlot, w: tabletW, h: dims.h }],
+                    mobile: [...(viewLayout.mobile || []), { id: tile.id, ...mobileSlot, w: mobileW, h: dims.h }],
+                };
+            }
+
+            // Also ensure favorites sync if isFavorite is true
+            if (tile.isFavorite) {
+                const favLayout = healedLayouts.favorites || { ultra: [], desktop: [], tablet: [], mobile: [] };
+                const existsInFav = favLayout.desktop?.some(l => l.id === tile.id);
+                if (!existsInFav) {
+                    console.warn(`[Nexura Healing] Favorite tile ${tile.id} missing from FAVORITES. Recovering...`);
+                    wasHealed = true;
+                    const dims = getSizeDimensions(tile.size);
+                    const favUltra = findFirstAvailableSlot(favLayout.ultra || [], dims.w, dims.h, 16);
+                    const favDesktop = findFirstAvailableSlot(favLayout.desktop || [], dims.w, dims.h, 14);
+                    const favTablet = findFirstAvailableSlot(favLayout.tablet || [], Math.min(dims.w, 10), dims.h, 10);
+                    const favMobile = findFirstAvailableSlot(favLayout.mobile || [], Math.min(dims.w, 6), dims.h, 6);
+
+                    healedLayouts.favorites = {
+                        ultra: [...(favLayout.ultra || []), { id: tile.id, ...favUltra, w: dims.w, h: dims.h }],
+                        desktop: [...(favLayout.desktop || []), { id: tile.id, ...favDesktop, w: dims.w, h: dims.h }],
+                        tablet: [...(favLayout.tablet || []), { id: tile.id, ...favTablet, w: Math.min(dims.w, 10), h: dims.h }],
+                        mobile: [...(favLayout.mobile || []), { id: tile.id, ...favMobile, w: Math.min(dims.w, 6), h: dims.h }],
+                    };
+                }
+            }
+        });
+
+        if (wasHealed) {
+            console.log("[Nexura Healing] Layout was successfully healed.");
+            const payload = { layout: mergedData, layouts: healedLayouts, title: title };
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+            callHAWebSocket('nexura/board/save', payload).catch(e => console.error(e));
+        }
+
+        setLayouts(healedLayouts);
         // Load Config
         try {
           const configRes = await callHAWebSocket('nexura/config/get') as {
@@ -469,6 +647,34 @@ function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hassConnection, hassState]);
 
+  // Premium Entrance Animation with Anime.js
+  useEffect(() => {
+    if (!loading && tiles.length > 0) {
+      const timer = setTimeout(() => {
+        const tileElements = document.querySelectorAll('.bento-grid > .bento-tile');
+        if (tileElements.length > 0) {
+          // Robust animation: explicitly set start and end values to avoid initial opacity: 0 issues
+          animate(tileElements, {
+            opacity: [0, 1],
+            translateY: [30, 0],
+            scale: [0.9, 1],
+            delay: stagger(35, { start: 150 }),
+            duration: 900,
+            easing: 'easeOutQuint',
+            // Safety: Ensure tiles are visible even if animation is interrupted
+            complete: () => {
+              tileElements.forEach(el => {
+                (el as HTMLElement).style.opacity = '1';
+                (el as HTMLElement).style.transform = '';
+              });
+            }
+          });
+        }
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [loading, activeView, tiles.length]);
+
   useEffect(() => {
     // Apply theme to body
     document.body.classList.remove('theme-dark', 'theme-light', 'theme-auto', 'theme-nature');
@@ -487,13 +693,52 @@ function App() {
   );
 
   const handleDragStart = useCallback((event: DragStartEvent) => {
-    setActiveId(event.active.id as string);
-  }, []);
+    const id = event.active.id as string;
+    setActiveId(id);
 
-  const handleDragOver = () => {
-    // We handle updates in DragEnd for stability in this custom grid implementation.
-    // If we want real-time "pushing", we would implement it here.
-  };
+    // Initial prediction is the current position
+    const viewLayout = layouts[activeView] || { desktop: [], tablet: [], mobile: [] };
+    const draggingTile = viewLayout[breakpoint].find(l => l.id === id);
+    if (draggingTile) {
+      setPredictedLayout({ ...draggingTile });
+    }
+  }, [activeView, breakpoint, layouts]);
+
+  const handleDragOver = useCallback((event: any) => {
+    const { active, delta } = event;
+    const draggedId = active.id as string;
+
+    const viewLayout = layouts[activeView] || { desktop: [], tablet: [], mobile: [] };
+    const currentLayout = viewLayout[breakpoint];
+    const tileLayout = currentLayout.find(l => l.id === draggedId);
+
+    if (!tileLayout || !gridUnitSize) return;
+
+    const colsConfig = { ultra: 16, desktop: 14, tablet: 10, mobile: 6 };
+    const cols = colsConfig[breakpoint];
+    const cellWidth = gridUnitSize;
+    const gap = breakpoint === 'mobile' ? 8 : 16;
+    const cellHeight = gridUnitSize + gap;
+
+    // Aligned threshold (0.6) for consistent ghost/drop behavior
+    const dx = calculateGridOffset(delta.x, cellWidth + gap, 0.6);
+    const dy = calculateGridOffset(delta.y, cellHeight, 0.6);
+
+    const newX = Math.max(0, Math.min(cols - tileLayout.w, tileLayout.x + dx));
+    const newY = Math.max(0, tileLayout.y + dy);
+
+    // Apply compactLayout to the prediction to match the final placement logic
+    const nextEntries = currentLayout.map(l =>
+      l.id === draggedId ? { ...l, x: newX, y: newY } : l
+    );
+    const compacted = compactLayout(nextEntries, draggedId);
+    const finalGhost = compacted.find(l => l.id === draggedId);
+
+    // Only update if ghost position actually changed
+    if (finalGhost && (!predictedLayout || predictedLayout.x !== finalGhost.x || predictedLayout.y !== finalGhost.y)) {
+      setPredictedLayout({ ...finalGhost });
+    }
+  }, [activeView, breakpoint, layouts, gridUnitSize, predictedLayout]);
 
   const handleEditClick = () => {
     setBackupTiles([...tiles]);
@@ -524,6 +769,7 @@ function App() {
         const updatedLayouts = { ...prevLayouts };
         Object.keys(updatedLayouts).forEach(view => {
           updatedLayouts[view] = {
+            ultra: (updatedLayouts[view].ultra || []).filter(l => l.id !== id),
             desktop: (updatedLayouts[view].desktop || []).filter(l => l.id !== id),
             tablet: (updatedLayouts[view].tablet || []).filter(l => l.id !== id),
             mobile: (updatedLayouts[view].mobile || []).filter(l => l.id !== id),
@@ -598,17 +844,81 @@ function App() {
 
         setLayouts(prevLayouts => {
           const updatedLayouts = { ...prevLayouts };
-          const viewLayout = updatedLayouts[activeView] || { desktop: [], tablet: [], mobile: [] };
+          const oldRoom = (tileToEdit.room && tileToEdit.room.trim() !== '') ? tileToEdit.room : 'Inconnue';
+          const newRoom = (newTile.room && newTile.room.trim() !== '') ? newTile.room : 'Inconnue';
 
-          const updateLayoutEntry = (layoutArr: LayoutEntry[]) => (layoutArr || []).map(l =>
-            l.id === tileToEdit.id ? { ...l, w: getSizeDimensions(newTile.size).w, h: getSizeDimensions(newTile.size).h } : l
-          );
+          if (oldRoom !== newRoom) {
+            // Room changed: Move layout entry from oldRoom to newRoom
+            const oldViewLayout = updatedLayouts[oldRoom] || { ultra: [], desktop: [], tablet: [], mobile: [] };
 
-          updatedLayouts[activeView] = {
-            desktop: updateLayoutEntry(viewLayout.desktop),
-            tablet: updateLayoutEntry(viewLayout.tablet),
-            mobile: updateLayoutEntry(viewLayout.mobile),
-          };
+            // Remove from old
+            updatedLayouts[oldRoom] = {
+              ultra: (oldViewLayout.ultra || []).filter(l => l.id !== tileToEdit.id),
+              desktop: (oldViewLayout.desktop || []).filter(l => l.id !== tileToEdit.id),
+              tablet: (oldViewLayout.tablet || []).filter(l => l.id !== tileToEdit.id),
+              mobile: (oldViewLayout.mobile || []).filter(l => l.id !== tileToEdit.id),
+            };
+
+            // Add to new (first available slot)
+            const newViewLayout = updatedLayouts[newRoom] || { ultra: [], desktop: [], tablet: [], mobile: [] };
+            const dims = getSizeDimensions(newTile.size);
+            const ultraSlot = findFirstAvailableSlot(newViewLayout.ultra || [], dims.w, dims.h, 16);
+            const desktopSlot = findFirstAvailableSlot(newViewLayout.desktop || [], dims.w, dims.h, 14);
+            const tabletW = Math.min(dims.w, 10);
+            const tabletSlot = findFirstAvailableSlot(newViewLayout.tablet || [], tabletW, dims.h, 10);
+            const mobileW = Math.min(dims.w, 6);
+            const mobileSlot = findFirstAvailableSlot(newViewLayout.mobile || [], mobileW, dims.h, 6);
+
+            updatedLayouts[newRoom] = {
+              ultra: [...(newViewLayout.ultra || []), { id: tileToEdit.id, ...ultraSlot, w: dims.w, h: dims.h }],
+              desktop: [...(newViewLayout.desktop || []), { id: tileToEdit.id, ...desktopSlot, w: dims.w, h: dims.h }],
+              tablet: [...(newViewLayout.tablet || []), { id: tileToEdit.id, ...tabletSlot, w: tabletW, h: dims.h }],
+              mobile: [...(newViewLayout.mobile || []), { id: tileToEdit.id, ...mobileSlot, w: mobileW, h: dims.h }],
+            };
+            
+            // Auto-switch to new room
+            setActiveView(newRoom);
+          } else {
+            // Room stayed the same: Just update dimensions in current view
+            const viewLayout = updatedLayouts[activeView] || { ultra: [], desktop: [], tablet: [], mobile: [] };
+            const updateLayoutEntry = (layoutArr: LayoutEntry[]) => (layoutArr || []).map(l =>
+              l.id === tileToEdit.id ? { ...l, w: getSizeDimensions(newTile.size).w, h: getSizeDimensions(newTile.size).h } : l
+            );
+
+            updatedLayouts[activeView] = {
+              ultra: updateLayoutEntry(viewLayout.ultra),
+              desktop: updateLayoutEntry(viewLayout.desktop),
+              tablet: updateLayoutEntry(viewLayout.tablet),
+              mobile: updateLayoutEntry(viewLayout.mobile),
+            };
+          }
+
+          // Sync Favorites
+          if (newTile.isFavorite) {
+            const favLayout = updatedLayouts.favorites || { ultra: [], desktop: [], tablet: [], mobile: [] };
+            const exists = favLayout.desktop?.some(l => l.id === tileToEdit.id);
+            if (!exists) {
+              const dims = getSizeDimensions(newTile.size);
+              const fU = findFirstAvailableSlot(favLayout.ultra || [], dims.w, dims.h, 16);
+              const fD = findFirstAvailableSlot(favLayout.desktop || [], dims.w, dims.h, 14);
+              const fT = findFirstAvailableSlot(favLayout.tablet || [], Math.min(dims.w, 10), dims.h, 10);
+              const fM = findFirstAvailableSlot(favLayout.mobile || [], Math.min(dims.w, 6), dims.h, 6);
+              updatedLayouts.favorites = {
+                ultra: [...(favLayout.ultra || []), { id: tileToEdit.id, ...fU, w: dims.w, h: dims.h }],
+                desktop: [...(favLayout.desktop || []), { id: tileToEdit.id, ...fD, w: dims.w, h: dims.h }],
+                tablet: [...(favLayout.tablet || []), { id: tileToEdit.id, ...fT, w: Math.min(dims.w, 10), h: dims.h }],
+                mobile: [...(favLayout.mobile || []), { id: tileToEdit.id, ...fM, w: Math.min(dims.w, 6), h: dims.h }],
+              };
+            }
+          } else {
+            // Remove from favorites if unchecked
+            updatedLayouts.favorites = {
+              ultra: (updatedLayouts.favorites?.ultra || []).filter(l => l.id !== tileToEdit.id),
+              desktop: (updatedLayouts.favorites?.desktop || []).filter(l => l.id !== tileToEdit.id),
+              tablet: (updatedLayouts.favorites?.tablet || []).filter(l => l.id !== tileToEdit.id),
+              mobile: (updatedLayouts.favorites?.mobile || []).filter(l => l.id !== tileToEdit.id),
+            };
+          }
 
           // Auto-save on edit
           const payload = { layout: updatedTiles, layouts: updatedLayouts, title: dashboardTitle };
@@ -624,10 +934,12 @@ function App() {
     } else {
       // Add new tile
       const dims = getSizeDimensions(newTile.size);
+      console.log("[Nexura Debug] handleAddTile -> newTile:", newTile, "dims:", dims);
 
       const targetRoom = newTile.room || activeView;
       setTiles(prevTiles => {
         const updatedTiles = [...prevTiles, newTile];
+        console.log("[Nexura Debug] handleAddTile -> updatedTiles count:", updatedTiles.length);
 
         setLayouts(prevLayouts => {
           const updatedLayouts = { ...prevLayouts };
@@ -636,7 +948,8 @@ function App() {
             newTile.isFavorite = true;
           }
 
-          const viewLayout = updatedLayouts[targetRoom] || { desktop: [], tablet: [], mobile: [] };
+          const viewLayout = updatedLayouts[targetRoom] || { ultra: [], desktop: [], tablet: [], mobile: [] };
+          const ultraSlot = findFirstAvailableSlot(viewLayout.ultra || [], dims.w, dims.h, 16);
           const desktopSlot = findFirstAvailableSlot(viewLayout.desktop || [], dims.w, dims.h, 12);
           const tabletW = Math.min(dims.w, 8);
           const tabletSlot = findFirstAvailableSlot(viewLayout.tablet || [], tabletW, dims.h, 8);
@@ -645,17 +958,20 @@ function App() {
 
           updatedLayouts[targetRoom] = {
             ...viewLayout,
+            ultra: [...(viewLayout.ultra || []), { id: newTile.id, ...ultraSlot, w: dims.w, h: dims.h }],
             desktop: [...(viewLayout.desktop || []), { id: newTile.id, ...desktopSlot, w: dims.w, h: dims.h }],
             tablet: [...(viewLayout.tablet || []), { id: newTile.id, ...tabletSlot, w: tabletW, h: dims.h }],
             mobile: [...(viewLayout.mobile || []), { id: newTile.id, ...mobileSlot, w: mobileW, h: dims.h }],
           };
 
           if (newTile.isFavorite && targetRoom !== 'favorites') {
-            const favLayout = updatedLayouts.favorites || { desktop: [], tablet: [], mobile: [] };
+            const favLayout = updatedLayouts.favorites || { ultra: [], desktop: [], tablet: [], mobile: [] };
+            const favUltra = findFirstAvailableSlot(favLayout.ultra || [], dims.w, dims.h, 16);
             const favDesktop = findFirstAvailableSlot(favLayout.desktop || [], dims.w, dims.h, 12);
             const favTablet = findFirstAvailableSlot(favLayout.tablet || [], tabletW, dims.h, 8);
             const favMobile = findFirstAvailableSlot(favLayout.mobile || [], mobileW, dims.h, 4);
             updatedLayouts.favorites = {
+              ultra: [...(favLayout.ultra || []), { id: newTile.id, ...favUltra, w: dims.w, h: dims.h }],
               desktop: [...(favLayout.desktop || []), { id: newTile.id, ...favDesktop, w: dims.w, h: dims.h }],
               tablet: [...(favLayout.tablet || []), { id: newTile.id, ...favTablet, w: tabletW, h: dims.h }],
               mobile: [...(favLayout.mobile || []), { id: newTile.id, ...favMobile, w: mobileW, h: dims.h }],
@@ -710,11 +1026,13 @@ function App() {
           const nextSize = sizes[nextIndex];
           const nextDims = getSizeDimensions(nextSize);
 
-          const maxCols = { desktop: 12, tablet: 8, mobile: 4 }[breakpoint];
+          const colsConfig: Record<Breakpoint, number> = { ultra: 16, desktop: 14, tablet: 10, mobile: 6 };
+          const cols = colsConfig[breakpoint];
 
+          const newW = Math.min(nextDims.w, cols);
           return {
             ...t,
-            w: Math.min(nextDims.w, maxCols),
+            w: newW,
             h: nextDims.h
           };
         }
@@ -742,15 +1060,16 @@ function App() {
       const tileLayout = currentLayout.find(l => l.id === draggedId);
       if (!tileLayout) return prev;
 
-      const cols = { desktop: 12, tablet: 8, mobile: 4 }[breakpoint];
+      const cols = { ultra: 16, desktop: 14, tablet: 10, mobile: 6 }[breakpoint];
 
 
       const cellWidth = gridUnitSize;
       const gap = breakpoint === 'mobile' ? 8 : 16;
       const cellHeight = gridUnitSize + gap; // unit + gap
 
+      // Aligned threshold (0.6) for consistent ghost/drop behavior
       const dx = calculateGridOffset(delta.x, cellWidth + gap, 0.6);
-      const dy = calculateGridOffset(delta.y, cellHeight, 0.7);
+      const dy = calculateGridOffset(delta.y, cellHeight, 0.6);
 
       const newX = Math.max(0, Math.min(cols - tileLayout.w, tileLayout.x + dx));
       const newY = Math.max(0, tileLayout.y + dy);
@@ -770,7 +1089,8 @@ function App() {
     });
 
     setActiveId(null);
-  }, [activeView, breakpoint]);
+    setPredictedLayout(null);
+  }, [activeView, breakpoint, gridUnitSize]);
 
   const handleToggle = useCallback((id: string, newState: boolean, entityId?: string) => {
     setTiles(prev => {
@@ -854,50 +1174,171 @@ function App() {
   const rooms = useMemo(() => {
     const r = new Set<string>();
     let hasRoomless = false;
+    
+    // We only want to show rooms that actually have tiles in the current layout
+    // (A tile might be in the 'tiles' array but effectively deleted/hidden from layout)
     tiles.forEach(t => {
-      if (t.room && t.room.trim() !== '') {
-        r.add(t.room);
-      } else {
-        hasRoomless = true;
+      // Check if tile is actually present in its room's layout
+      const roomKey = (t.room && t.room.trim() !== '') ? t.room : 'Inconnue';
+      const viewLayout = layouts[roomKey]?.[breakpoint] || layouts[roomKey]?.['desktop'] || [];
+      const isInLayout = viewLayout.some(entry => entry.id === t.id && (!entry.hidden || isEditMode));
+
+      if (isInLayout) {
+        if (roomKey !== 'Inconnue') {
+          r.add(roomKey);
+        } else {
+          hasRoomless = true;
+        }
       }
     });
+
     const sortedRooms = Array.from(r).sort();
     if (hasRoomless) {
       sortedRooms.push('Inconnue');
     }
     return sortedRooms;
-  }, [tiles]);
+  }, [tiles, layouts, breakpoint, isEditMode]);
 
   // Memoize to avoid recalculating on every render (drag frames)
   const currentLayoutEntries = useMemo(
-    () => layouts[activeView]?.[breakpoint] || [],
+    () => layouts[activeView]?.[breakpoint] || layouts[activeView]?.['desktop'] || [],
     [layouts, activeView, breakpoint]
   );
 
   const orderedAndFilteredTiles = useMemo(() => {
-    const result: (TileData & { layout: LayoutEntry })[] = [];
-
+    // 1. Initial Filtering (Visibility Rules & Room/Favorites)
+    const visibleTiles: (TileData & { layout: LayoutEntry })[] = [];
+    
     for (const entry of currentLayoutEntries) {
       const tileData = tiles.find(t => t.id === entry.id);
       if (!tileData) continue;
 
-      const combined = { ...tileData, layout: entry };
+      const combined = { ...tileData, layout: { ...entry } };
 
-      // Filter by visibility (hide hidden tiles unless in edit mode)
+      // Filter by hidden state (user override)
       if (entry.hidden && !isEditMode) continue;
 
-      // Filter by active view (room/favorites)
+      // Filter by predictive visibility rules (Favorites only)
+      if (!isEditMode && activeView === 'favorites') {
+        const allRules = [
+          ...(tileData.visibilityRule ? [ { ...tileData.visibilityRule, type: 'entity' } as VisibilityRule ] : []),
+          ...(tileData.visibilityRules || [])
+        ];
+
+        if (allRules.length > 0) {
+          let isTileVisible = true;
+          for (const rule of allRules) {
+            if (rule.type === 'entity') {
+              const { entityId, operator, value } = rule;
+              const entity = hassEntities[entityId];
+              let isRuleMet = false;
+              if (entity) {
+                const stateValue = entity.state;
+                const numStateValue = parseFloat(stateValue);
+                const numTargetValue = parseFloat(value);
+                const isNumeric = !isNaN(numStateValue) && !isNaN(numTargetValue);
+                switch (operator) {
+                  case '=': isRuleMet = stateValue === value; break;
+                  case '!=': isRuleMet = stateValue !== value; break;
+                  case '>': isRuleMet = isNumeric ? numStateValue > numTargetValue : stateValue > value; break;
+                  case '<': isRuleMet = isNumeric ? numStateValue < numTargetValue : stateValue < value; break;
+                }
+              }
+              if (!isRuleMet) { isTileVisible = false; break; }
+            } else if (rule.type === 'time') {
+              const { startTime, endTime } = rule;
+              const now = new Date();
+              const currentTime = now.getHours() * 60 + now.getMinutes();
+              const parseTime = (s: string) => { const [h, m] = s.split(':').map(Number); return h * 60 + (m || 0); };
+              const start = parseTime(startTime);
+              const end = parseTime(endTime);
+              const isRuleMet = start <= end ? (currentTime >= start && currentTime <= end) : (currentTime >= start || currentTime <= end);
+              if (!isRuleMet) { isTileVisible = false; break; }
+            }
+          }
+          if (!isTileVisible) continue;
+        }
+      }
+
+      // Filter by active view
       if (activeView === 'favorites') {
-        if (combined.isFavorite) result.push(combined);
+        if (combined.isFavorite) visibleTiles.push(combined);
       } else if (activeView === 'Inconnue') {
-        // Show if no room, or if room is explicitly 'Inconnue'
-        if (!combined.room || combined.room.trim() === '' || combined.room === 'Inconnue') result.push(combined);
+        if (!combined.room || combined.room.trim() === '' || combined.room === 'Inconnue') visibleTiles.push(combined);
       } else if (combined.room === activeView) {
-        result.push(combined);
+        visibleTiles.push(combined);
       }
     }
-    return result;
-  }, [tiles, currentLayoutEntries, activeView, isEditMode]);
+
+    // If Edit Mode or not in favorites, return simple layout
+    if (isEditMode) return visibleTiles;
+
+    // 2. Reflow Algorithm (Anchor-Row logic)
+    // Identify tiles that are hidden by rules (but were supposed to be there)
+    const ruleHiddenTiles = currentLayoutEntries
+      .filter(entry => {
+        const tileData = tiles.find(t => t.id === entry.id);
+        if (!tileData) return false;
+        // It's "rule hidden" if it's NOT in visibleTiles but IS in currentLayoutEntries (and not manually hidden)
+        return !entry.hidden && !visibleTiles.some(vt => vt.id === entry.id);
+      })
+      .map(entry => ({ x: entry.x, y: entry.y, w: entry.w, h: entry.h, id: entry.id }));
+
+    // Sort visible tiles by Y then X
+    const sortedVisible = [...visibleTiles].sort((a, b) => a.layout.y - b.layout.y || a.layout.x - b.layout.x);
+    
+    // Process each visible tile
+    const reflowedResult: (TileData & { layout: LayoutEntry })[] = [];
+    
+    sortedVisible.forEach(tile => {
+      // Anchors (h > 2) stay fixed
+      if (tile.layout.h > 2) {
+        reflowedResult.push(tile);
+        return;
+      }
+
+      // Fluids (h <= 2) shift left based on hidden tiles on the same row
+      const originalX = tile.layout.x;
+      const originalY = tile.layout.y;
+      
+      // Find hidden tiles on the same row that were to the left
+      const hiddenToLeft = ruleHiddenTiles.filter(h => h.y === originalY && h.x < originalX);
+      const shift = hiddenToLeft.reduce((sum, h) => sum + h.w, 0);
+
+      if (shift > 0) {
+        tile.layout.x = Math.max(0, originalX - shift);
+      }
+      reflowedResult.push(tile);
+    });
+
+    // 3. Vertical Compression (Remove entirely empty rows)
+    const finalResult = [...reflowedResult];
+    // Re-calculate occupancy for visible tiles after horizontal shift
+    const usedRows = new Set<number>();
+    finalResult.forEach(t => {
+      for (let i = t.layout.y; i < t.layout.y + t.layout.h; i++) usedRows.add(i);
+    });
+
+    const sortedUsedRows = Array.from(usedRows).sort((a, b) => a - b);
+    if (sortedUsedRows.length > 0) {
+      const rowOffsetMap: { [y: number]: number } = {};
+      let currentOffset = 0;
+      const maxRow = Math.max(...sortedUsedRows);
+      
+      for (let y = 0; y <= maxRow; y++) {
+        if (!usedRows.has(y)) {
+          currentOffset++;
+        }
+        rowOffsetMap[y] = currentOffset;
+      }
+
+      finalResult.forEach(tile => {
+        tile.layout.y -= rowOffsetMap[tile.layout.y] || 0;
+      });
+    }
+
+    return finalResult;
+  }, [tiles, currentLayoutEntries, activeView, isEditMode, hassEntities, breakpoint]);
 
   const roomAlerts = useMemo(() => {
     const alerts: { [key: string]: boolean } = {};
@@ -908,6 +1349,27 @@ function App() {
       alerts[room] = roomTiles.some(t => getHaloType(t.entityId, hassEntities) === 'danger');
     });
     return alerts;
+  }, [tiles, rooms, hassEntities]);
+
+  const roomLightStates = useMemo(() => {
+    const lightStates: { [key: string]: boolean } = {};
+    rooms.forEach(room => {
+      const roomTiles = room === 'Inconnue'
+        ? tiles.filter(t => !t.room || t.room.trim() === '')
+        : tiles.filter(t => t.room === room);
+      
+      lightStates[room] = roomTiles.some(t => {
+        const entity = t.entityId ? hassEntities[t.entityId] : null;
+        if (!entity) return false;
+        
+        // Consider it a light if type is toggle/slider or domain is light
+        const isLight = t.type === 'toggle' || t.type === 'slider' || t.entityId?.startsWith('light.');
+        const isOn = entity.state === 'on';
+        
+        return isLight && isOn;
+      });
+    });
+    return lightStates;
   }, [tiles, rooms, hassEntities]);
 
   const handleToggleFavorite = useCallback((id: string) => {
@@ -922,9 +1384,10 @@ function App() {
 
           const dims = getSizeDimensions(tile.size);
           const updatedLayouts = { ...lPrev };
-          const favLayout = updatedLayouts.favorites || { desktop: [], tablet: [], mobile: [] };
+          const favLayout = updatedLayouts.favorites || { ultra: [], desktop: [], tablet: [], mobile: [] };
 
           updatedLayouts.favorites = {
+            ultra: [...favLayout.ultra, { id, x: 0, y: 0, w: dims.w, h: dims.h }],
             desktop: [...favLayout.desktop, { id, x: 0, y: 0, w: dims.w, h: dims.h }],
             tablet: [...favLayout.tablet, { id, x: 0, y: 0, w: Math.min(dims.w, 8), h: dims.h }],
             mobile: [...favLayout.mobile, { id, x: 0, y: 0, w: Math.min(dims.w, 4), h: dims.h }],
@@ -942,7 +1405,6 @@ function App() {
 
   // Tracks whether any tile drag is in progress (used to disable
   // expensive animations on sibling tiles during drag)
-  const isAnyDragging = activeId !== null;
 
   // Apply day/night gradient to body background (Only for dark theme)
   // (must be called before any conditional returns — rules of hooks)
@@ -1039,6 +1501,16 @@ function App() {
           );
         }
 
+        // Presence / Motion specialized rendering
+        if (deviceClass === 'motion' || deviceClass === 'presence' || deviceClass === 'occupancy') {
+          return (
+            <MotionAlertContent
+              state={entity?.state || 'off'}
+              lastChanged={entity?.last_changed}
+            />
+          );
+        }
+
         // Special rendering for Windows and Doors
         if (deviceClass === 'window' || deviceClass === 'door' || deviceClass === 'garage_door' || deviceClass === 'opening') {
           const isOpen = entity ? (entity.state === 'on' || entity.state === 'open') : false;
@@ -1058,6 +1530,13 @@ function App() {
               entity={entity}
               size={tile.size || 'small'}
             />
+          );
+        }
+
+        // Special rendering for Camera domain (fallback if type != 'camera')
+        if (tile.entityId?.startsWith('camera.')) {
+          return (
+            <CameraContent entity={entity} connection={hassConnection} />
           );
         }
 
@@ -1087,7 +1566,7 @@ function App() {
         return (
           <EnergyGaugeContent
             value={power}
-            maxValue={tile.maxPower || 9000}
+            maxValue={tile.maxPower || 5000}
             unit={unit}
             label={entity?.attributes?.friendly_name || tile.title}
           />
@@ -1104,6 +1583,19 @@ function App() {
             homeEntityId={undefined}
           />
         );
+      case 'camera':
+        return (
+          <CameraContent entity={entity} connection={hassConnection} />
+        );
+      case 'fire-alert': {
+        const isOn = entity ? (entity.state === 'on' || entity.state === 'tripped') : false;
+        return (
+          <FireAlertContent
+            isOn={isOn}
+            isEditMode={isEditMode}
+          />
+        );
+      }
     }
   };
 
@@ -1116,19 +1608,34 @@ function App() {
           mode={weatherEffects}
         />
       )}
+      {isSidebarOpen && (
+        <div className="sidebar-overlay" onClick={() => setIsSidebarOpen(false)} />
+      )}
       <Sidebar
         rooms={rooms}
         activeView={activeView}
-        onViewChange={setActiveView}
+        onViewChange={(view) => {
+          setActiveView(view);
+          setIsSidebarOpen(false); // Close on selection
+        }}
         isEditMode={isEditMode}
         roomAlerts={roomAlerts}
+        roomLightStates={roomLightStates}
         isFullScreen={isFullScreen}
         onToggleFullScreen={handleToggleFullScreen}
-
+        isOpen={isSidebarOpen}
+        onClose={() => setIsSidebarOpen(false)}
       />
 
       <div className="app-container">
         <header className="app-header">
+          <button 
+            className="mobile-menu-btn" 
+            onClick={() => setIsSidebarOpen(true)}
+            aria-label="Menu"
+          >
+            <DynamicIcon name="Menu" size={24} />
+          </button>
           <div className="header-content-left">
             <div className="title-row">
               {isEditMode ? (
@@ -1156,9 +1663,6 @@ function App() {
                 )}
               </div>
             </div>
-            <div className={`connection-status ${hassState}`}>
-              {hassState === 'connected' ? `● ${t('states.playing') || 'Live'}` : (hassState === 'connecting' ? '○ Connexion...' : '✕ Erreur')}
-            </div>
           </div>
         </header>
 
@@ -1174,24 +1678,47 @@ function App() {
             sensors={sensors}
             collisionDetection={closestCorners}
             onDragStart={handleDragStart}
-            onDragOver={handleDragOver}
+            onDragMove={handleDragOver}
             onDragEnd={handleDragEnd}
             onDragCancel={() => setActiveId(null)}
             autoScroll={false}
           >
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={activeView}
-                initial={{ y: -50, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                exit={{ y: 50, opacity: 0 }}
-                transition={{ type: "spring", stiffness: 100, damping: 20 }}
-              >
+            <div
+              key={activeView}
+              className={`view-container ${tiles.length === 0 ? 'empty-dashboard' : ''}`}
+              ref={viewContainerRef}
+              style={{ opacity: 0 }} // Pre-set to 0 to avoid flicker
+            >
+              {tiles.length === 0 ? (
+                <div className="empty-state-container">
+                  <DynamicIcon name="PlusCircle" size={48} />
+                  <p>{t('board.empty_hint') || "Aucune tuile. Ajoutez-en une pour commencer !"}</p>
+                  <button className="btn-primary" onClick={() => setIsAddModalOpen(true)}>{t('add_tile_modal.add')}</button>
+                </div>
+              ) : (
                 <SortableContext
                   items={sortableItems}
                   strategy={rectSortingStrategy}
                 >
-                  <BentoGrid ref={gridRef}>
+                  <BentoGrid
+                    ref={gridRef}
+                    style={{
+                      '--grid-unit-size': `${gridUnitSize}px`,
+                      '--grid-gap': breakpoint === 'mobile' ? '0.5rem' : '1rem',
+                      '--grid-cols': breakpoint === 'ultra' ? 16 : breakpoint === 'desktop' ? 14 : breakpoint === 'tablet' ? 10 : 6
+                    } as React.CSSProperties}
+                  >
+                    {/* Ghost/Magnet Placeholder */}
+                    {isAnyDragging && predictedLayout && (
+                      <BentoTile
+                        id="ghost-placeholder"
+                        layout={predictedLayout}
+                        className="tile-placeholder"
+                        isOverlay={false}
+                        hideHeader={true}
+                      />
+                    )}
+
                     {orderedAndFilteredTiles.map((tile) => {
                       const entity = tile.entityId ? hassEntities[tile.entityId] : null;
 
@@ -1220,10 +1747,30 @@ function App() {
                           onClick={() => {
                             if (tile.type === 'toggle') handleToggle(tile.id, !tile.isOn, tile.entityId);
                           }}
-                          noPadding={tile.entityId?.startsWith('weather.') || tile.type === 'media'}
-                          hideHeader={tile.entityId?.startsWith('weather.') || tile.type === 'graph' || tile.type === 'media'}
+                          noPadding={
+                            tile.entityId?.startsWith('weather.') || 
+                            tile.entityId?.startsWith('camera.') || 
+                            tile.type === 'media' || 
+                            tile.type === 'camera' || 
+                            tile.type === 'fire-alert' ||
+                            entity?.attributes?.device_class === 'motion' ||
+                            entity?.attributes?.device_class === 'presence' ||
+                            entity?.attributes?.device_class === 'occupancy'
+                          }
+                          hideHeader={
+                            tile.entityId?.startsWith('weather.') || 
+                            tile.entityId?.startsWith('camera.') || 
+                            tile.type === 'graph' || 
+                            tile.type === 'media' || 
+                            tile.type === 'camera' || 
+                            tile.type === 'fire-alert' ||
+                            entity?.attributes?.device_class === 'motion' ||
+                            entity?.attributes?.device_class === 'presence' ||
+                            entity?.attributes?.device_class === 'occupancy'
+                          }
                           tileTheme={tileThemesEnabled ? tile.tileTheme : undefined}
                           entityState={tile.entityId ? hassEntities[tile.entityId]?.state : undefined}
+                          isPredictive={!!tile.visibilityRule}
                           isAnyDragging={isAnyDragging}
                         >
                           {renderTileContent(tile)}
@@ -1232,8 +1779,8 @@ function App() {
                     })}
                   </BentoGrid>
                 </SortableContext>
-              </motion.div>
-            </AnimatePresence>
+              )}
+            </div>
 
             <DragOverlay dropAnimation={DROP_ANIMATION} adjustScale={false}>
               {activeTile ? (
@@ -1248,6 +1795,8 @@ function App() {
                   hassEntities={hassEntities}
                   isOverlay
                   isEditMode={isEditMode}
+                  noPadding={activeTile.entityId?.startsWith('weather.') || activeTile.entityId?.startsWith('camera.') || activeTile.type === 'media' || activeTile.type === 'camera' || activeTile.type === 'fire-alert'}
+                  hideHeader={activeTile.entityId?.startsWith('weather.') || activeTile.entityId?.startsWith('camera.') || activeTile.type === 'graph' || activeTile.type === 'media' || activeTile.type === 'camera' || activeTile.type === 'fire-alert'}
                 >
                   {renderTileContent(activeTile)}
                 </BentoTile>

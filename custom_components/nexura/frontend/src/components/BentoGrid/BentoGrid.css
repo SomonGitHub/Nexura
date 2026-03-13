@@ -1,11 +1,11 @@
 .bento-grid {
   display: grid;
   box-sizing: border-box;
-  /* 12 columns for Desktop */
-  grid-template-columns: repeat(12, 1fr);
-  /* Use dynamic unit size calculated in App.tsx to maintain 1:1 aspect ratio */
+  /* Columns configured in App.tsx */
+  grid-template-columns: repeat(var(--grid-cols, 14), 1fr);
+  /* Use dynamic unit size from JS for 1:1 ratio */
   grid-auto-rows: var(--grid-unit-size, 80px);
-  gap: 1rem;
+  gap: var(--grid-gap, 1rem);
   padding: 1.5rem 2rem;
   width: 100%;
   max-width: 100%;
@@ -17,7 +17,10 @@
 .edit-mode .bento-grid {
   background-image:
     radial-gradient(circle, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
-  background-size: calc(100% / 12) calc(var(--grid-unit-size, 80px) + 1rem);
+  /* background-size must match (unit + gap) exactly */
+  background-size: calc(100% / var(--grid-cols, 14)) calc(var(--grid-unit-size) + var(--grid-gap, 1rem));
+  /* Center the dot in the cell */
+  background-position: calc((100% / var(--grid-cols, 14)) / 2) calc(var(--grid-unit-size) / 2);
 }
 
 body.theme-light .edit-mode .bento-grid {
@@ -25,28 +28,16 @@ body.theme-light .edit-mode .bento-grid {
     radial-gradient(circle, rgba(22, 78, 99, 0.05) 1px, transparent 1px);
 }
 
-/* Adjustments for tablettes */
+/* Adjustments for tablets */
 @media (max-width: 1024px) {
   .bento-grid {
-    grid-template-columns: repeat(8, 1fr);
-    grid-auto-rows: var(--grid-unit-size, 100px);
     padding: 1rem;
-  }
-
-  .edit-mode .bento-grid {
-    background-size: calc(100% / 8) calc(var(--grid-unit-size, 100px) + 1rem);
   }
 }
 
 /* Adjustments for mobiles */
 @media (max-width: 767px) {
   .bento-grid {
-    grid-template-columns: repeat(4, 1fr);
-    grid-auto-rows: var(--grid-unit-size, 80px);
-    gap: 0.5rem;
-  }
-
-  .edit-mode .bento-grid {
-    background-size: calc(100% / 4) calc(var(--grid-unit-size, 80px) + 0.5rem);
+    padding: 0.5rem;
   }
 }

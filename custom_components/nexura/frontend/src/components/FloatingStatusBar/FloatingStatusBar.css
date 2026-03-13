@@ -1,9 +1,7 @@
 .floating-status-bar {
-    position: absolute;
-    top: 80px;
-    /* juste sous le header */
-    left: 50%;
-    transform: translateX(-50%);
+    position: relative;
+    margin-top: -10px;
+    margin-bottom: 20px;
     display: flex;
     flex-direction: row;
     /* Alignement horizontal */
@@ -11,12 +9,14 @@
     gap: 12px;
     /* Espace entre les pilules */
     z-index: 100;
+    width: 100%;
 }
 
 .status-pill-container {
     display: flex;
     flex-direction: column;
     align-items: center;
+    position: relative; /* Ajout pour encrer la position absolute de la modale */
 }
 
 .status-pill {
@@ -24,7 +24,7 @@
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 30px;
+    border-radius: var(--pill-border-radius);
     padding: 8px 16px;
     display: flex;
     align-items: center;
@@ -45,18 +45,25 @@
 }
 
 .status-details-panel {
-    margin-top: 10px;
+    position: fixed;
+    top: 130px; /* En dessous du header et de la barre */
+    left: 0;
+    right: 0;
+    margin: 0 auto;
     background: rgba(30, 30, 30, 0.8);
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
     border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 16px;
+    border-radius: var(--modal-border-radius);
     padding: 16px;
-    width: 300px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    width: fit-content;
+    min-width: 300px;
+    max-width: 92vw;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
     display: flex;
     flex-direction: column;
     gap: 12px;
+    z-index: 1000; /* Assurer qu'elle est au-dessus de tout */
 }
 
 .status-details-header {

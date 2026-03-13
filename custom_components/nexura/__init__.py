@@ -51,7 +51,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             sidebar_icon="mdi:home-assistant",
             frontend_url_path="nexura",
             config={
-                "url": "/nexura_static/index.html"
+                "url": "/nexura_static/index.html?v=200"
             },
             require_admin=False
         )

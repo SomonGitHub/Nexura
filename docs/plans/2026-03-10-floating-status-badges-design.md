@@ -3,19 +3,31 @@
 ## Date : 10 Mars 2026
 
 ## Vue d'ensemble
-L'objectif est d'ajouter une barre de badges d'état (ou des pilules individuelles) sur le tableau de bord de Nexura. Pour cette première itération, nous nous concentrons sur un badge "lumière" qui indique le nombre de lumières actuellement allumées.
+L'objectif est d'ajouter un système de badges d'état ("Dynamic Island") sur le tableau de bord de Nexura. Après une première version pour les lumières, nous étendons le système pour supporter plusieurs catégories d'alertes simultanées sous forme de pilules séparées.
+
+## Badges Supportés
+1. **Lumières** : Nombre de lumières allumées.
+2. **Volets** : Nombre de volets actuellement ouverts.
 
 ## Approche de Design
 
 ### Emplacement et Apparence
-* **Dynamic Island** : Une petite interface en forme de pilule élégante apparaissant discrètement juste sous l'en-tête (Header) de l'interface existante.
+* **Dynamic Island Multi-pilules** : Les badges apparaissent sous forme de pilules individuelles, alignées horizontalement et centrées sous l'en-tête (Header).
 * **Comportement dynamique** :
-  * Si aucune lumière n'est allumée : Le badge n'apparaît pas ou reste particulièrement discret.
-  * Si une ou plusieurs lumières sont allumées : Le badge s'anime en douceur pour apparaître, et affiche une icône 💡 accompagnée d'un compteur du nombre de lumières allumées.
+  * Chaque badge n'apparaît que si son compteur est supérieur à 0 (ex: au moins une lumière allumée ou un volet ouvert).
+  * Les pilules s'animent indépendamment pour apparaître/disparaître.
 
 ### Comptabilisation et Périmètre
-* Le comptage se base **exclusivement** sur les lumières qui ont été préalablement ajoutées comme tuiles dans le tableau de bord Nexura de l'utilisateur.
-* Il ne tient pas compte des lumières "techniques" ou celles non gérées sur l'interface Nexura actuelle.
+* Le comptage se base **exclusivement** sur les entités qui ont été préalablement ajoutées comme tuiles dans le tableau de bord Nexura.
+* **Lumières** : Domaine `light.*`, état `on`.
+* **Volets** : Domaine `cover.*`, état différent de `closed` (soit `open`, `opening` ou `closing`).
+
+### Interaction
+* Chaque pilule ouvre son propre **Panneau de Détails** spécifique.
+* **Badge Volets** : 
+  * Affiche la liste des volets ouverts.
+  * Permet de fermer chaque volet individuellement.
+  * Bouton global "Tout fermer".
 
 ### Interaction
 * Le badge est interactif et visuellement cliquable (effet de survol).
